@@ -4,10 +4,6 @@ Library.Link = "https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Li
 Library.Send = function(title, desc, color, link)
     local lp = game.Players.LocalPlayer
     color = tonumber(color) or 0x825AFF
-    
-    -- Получаем аватар игрока (голову) для Thumbnail
-    local headShot = `https://www.roblox.com/headshot-thumbnail/image?userId={lp.UserId}&width=420&height=420&format=png`
-
     local data = {
         username = "Noclipov System",
         avatar_url = "https://i.imgur.com/x4q1HDg.png",
@@ -39,12 +35,6 @@ Library.Send = function(title, desc, color, link)
                     inline = true
                 }
             },
-            
-            -- Миниатюра игрока справа
-            thumbnail = {
-                url = headShot
-            },
-            
             footer = {
                 text = "Noclipov Runtime Environment • " .. os.date("%X"),
                 icon_url = "https://i.imgur.com/x4q1HDg.png"
