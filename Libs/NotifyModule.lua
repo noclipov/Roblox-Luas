@@ -1,24 +1,22 @@
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 
-local Notify = {}
-
--- [[ CONFIGURATION ]]
+local Library = {}
+Library.Link = "https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Libs/NotifyModule.lua"
+-- loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Libs/NotifyModule.lua"))()
 local COLORS = {
     Background_Top = Color3.fromRGB(35, 35, 45),
     Background_Bottom = Color3.fromRGB(25, 25, 30),
+    Mini_Background = Color3.fromRGB(30, 30, 35),
     Text_Title = Color3.fromRGB(255, 255, 255),
     Text_Desc = Color3.fromRGB(200, 200, 210),
-	Mini_Background = Color3.fromRGB(30, 30, 35),
-    
+
     Success = Color3.fromRGB(140, 100, 255),
     Warning = Color3.fromRGB(255, 190, 70),
     Error   = Color3.fromRGB(255, 90, 90),
 }
-
 local NOTIFY_WIDTH = 340
 local NOTIFY_PADDING = 12
-
 local function getContainer()
     local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
     local sg = playerGui:FindFirstChild("Noclipov_UI_Storage")
@@ -48,12 +46,11 @@ local function getContainer()
     return sg.NotifyContainer
 end
 
-function Notify.New(type, title, text, duration)
+Library.New = function(type, title, text, duration)
     duration = duration or 5
     local accentColor = COLORS[type] or COLORS.Success
     local container = getContainer()
     
-    -- [[ ГЛАВНАЯ КАРТОЧКА ]]
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, 0, 0, 0)
     frame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -73,16 +70,15 @@ function Notify.New(type, title, text, duration)
     gradient.Rotation = 90
     gradient.Parent = frame
 
-    -- [[ КОНТЕНТ ]]
     local inner = Instance.new("Frame")
     inner.Size = UDim2.new(1, 0, 1, 0)
     inner.BackgroundTransparency = 1
     inner.Parent = frame
 
-    -- 1. ЗАГОЛОВОК (поднят выше)
+    -- Заголовок
     local titleLbl = Instance.new("TextLabel")
     titleLbl.Size = UDim2.new(1, -45, 0, 18)
-    titleLbl.Position = UDim2.new(0, 25, 0, 10) -- Минимальный отступ сверху
+    titleLbl.Position = UDim2.new(0, 25, 0, 10)
     titleLbl.Text = title:upper()
     titleLbl.TextColor3 = accentColor
     titleLbl.Font = Enum.Font.GothamBold
@@ -91,13 +87,12 @@ function Notify.New(type, title, text, duration)
     titleLbl.BackgroundTransparency = 1
     titleLbl.Parent = inner
 
-    -- 2. ПОЛОСКА-РАЗДЕЛИТЕЛЬ (сразу под заголовком)
+    -- Полоска-разделитель (Таймер)
     local barContainer = Instance.new("Frame")
-    barContainer.Name = "DividerTimer"
-    barContainer.Size = UDim2.new(1, -45, 0, 2) -- Тонкая линия (2px) для изящности
-    barContainer.Position = UDim2.new(0, 25, 0, 32) -- Фиксированная позиция разделителя
+    barContainer.Size = UDim2.new(1, -45, 0, 2)
+    barContainer.Position = UDim2.new(0, 25, 0, 32)
     barContainer.BackgroundColor3 = accentColor
-    barContainer.BackgroundTransparency = 0.85 -- Почти прозрачный след
+    barContainer.BackgroundTransparency = 0.85
     barContainer.BorderSizePixel = 0
     barContainer.ClipsDescendants = true
     barContainer.Parent = inner
@@ -116,10 +111,10 @@ function Notify.New(type, title, text, duration)
     innerCorner.CornerRadius = UDim.new(1, 0)
     innerCorner.Parent = progressInner
 
-    -- 3. ОПИСАНИЕ (с заметным отступом от разделителя)
+    -- Описание
     local descLbl = Instance.new("TextLabel")
     descLbl.Size = UDim2.new(1, -45, 0, 0)
-    descLbl.Position = UDim2.new(0, 25, 0, 44) -- Увеличен отступ от полоски
+    descLbl.Position = UDim2.new(0, 25, 0, 44)
     descLbl.Text = text
     descLbl.TextColor3 = COLORS.Text_Desc
     descLbl.Font = Enum.Font.Gotham
@@ -131,7 +126,7 @@ function Notify.New(type, title, text, duration)
     descLbl.BackgroundTransparency = 1
     descLbl.Parent = inner
 
-    -- Акцентная линия слева (на всю высоту контента)
+    -- Акцентная линия слева
     local accentLine = Instance.new("Frame")
     accentLine.Size = UDim2.new(0, 3, 1, -20)
     accentLine.Position = UDim2.new(0, 12, 0, 10)
@@ -143,23 +138,20 @@ function Notify.New(type, title, text, duration)
     lineCorner.CornerRadius = UDim.new(1, 0)
     lineCorner.Parent = accentLine
 
-    -- [[ АНИМАЦИЯ ]]
+    -- Анимации
     local descHeight = descLbl.TextBounds.Y
-    local finalHeight = descHeight + 60 -- Оптимизировано под новые отступы
-    finalHeight = math.max(finalHeight, 80)
+    local finalHeight = math.max(descHeight + 60, 80)
 
     frame.Position = UDim2.new(1.3, 0, 0, 0)
     
-    local openTween = TweenService:Create(frame, TweenInfo.new(0.6, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+    TweenService:Create(frame, TweenInfo.new(0.6, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
         Position = UDim2.new(0, 0, 0, 0),
         Size = UDim2.new(1, 0, 0, finalHeight)
-    })
-    openTween:Play()
+    }):Play()
 
-    local barTween = TweenService:Create(progressInner, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
+    TweenService:Create(progressInner, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
         Size = UDim2.new(0, 0, 1, 0)
-    })
-    barTween:Play()
+    }):Play()
 
     task.delay(duration, function()
         local out = TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {
@@ -172,15 +164,13 @@ function Notify.New(type, title, text, duration)
     end)
 end
 
-function Notify.Mini(type, text, duration)
-    duration = duration or 3 -- Быстрые уведомления обычно висят меньше
+Library.Mini = function(type, text, duration)
+    duration = duration or 3
     local accentColor = COLORS[type] or COLORS.Success
     local container = getContainer()
     
-    -- [[ КАРТОЧКА ]]
     local frame = Instance.new("Frame")
-    frame.Name = "MiniNotification"
-    frame.Size = UDim2.new(0, 0, 0, 38) -- Фиксированная высота для компактности
+    frame.Size = UDim2.new(0, 0, 0, 38)
     frame.BackgroundColor3 = COLORS.Mini_Background
     frame.BorderSizePixel = 0
     frame.ClipsDescendants = true
@@ -190,20 +180,17 @@ function Notify.Mini(type, text, duration)
     mainCorner.CornerRadius = UDim.new(0, 8)
     mainCorner.Parent = frame
     
-    -- Тонкая обводка для стиля
     local stroke = Instance.new("UIStroke")
     stroke.Color = accentColor
     stroke.Thickness = 1
     stroke.Transparency = 0.7
     stroke.Parent = frame
 
-    -- [[ КОНТЕНТ ]]
     local inner = Instance.new("Frame")
     inner.Size = UDim2.new(1, 0, 1, 0)
     inner.BackgroundTransparency = 1
     inner.Parent = frame
 
-    -- Акцентный индикатор (слева)
     local indicator = Instance.new("Frame")
     indicator.Size = UDim2.new(0, 4, 0, 16)
     indicator.Position = UDim2.new(0, 10, 0.5, 0)
@@ -216,7 +203,6 @@ function Notify.Mini(type, text, duration)
     indCorner.CornerRadius = UDim.new(1, 0)
     indCorner.Parent = indicator
 
-    -- Текст сообщения (в одну строку)
     local msgLbl = Instance.new("TextLabel")
     msgLbl.Size = UDim2.new(1, -35, 1, 0)
     msgLbl.Position = UDim2.new(0, 24, 0, 0)
@@ -228,8 +214,6 @@ function Notify.Mini(type, text, duration)
     msgLbl.BackgroundTransparency = 1
     msgLbl.Parent = inner
 
-    -- [[ ПОЛОСКА-РАЗДЕЛИТЕЛЬ (ТАЙМЕР) ]]
-    -- Сделаем её совсем тонкой снизу
     local progressInner = Instance.new("Frame")
     progressInner.Size = UDim2.new(1, 0, 0, 2)
     progressInner.Position = UDim2.new(0, 0, 1, -2)
@@ -237,19 +221,16 @@ function Notify.Mini(type, text, duration)
     progressInner.BorderSizePixel = 0
     progressInner.Parent = frame
 
-    -- [[ АНИМАЦИЯ ]]
-    local textWidth = msgLbl.TextBounds.X + 45 -- Считаем ширину по тексту
-    local finalWidth = math.clamp(textWidth, 120, 300) -- Ограничиваем размеры
+    local textWidth = msgLbl.TextBounds.X + 45
+    local finalWidth = math.clamp(textWidth, 120, 300)
 
     frame.Position = UDim2.new(1.3, 0, 0, 0)
     
-    -- Плавное появление
     TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
         Position = UDim2.new(0, 0, 0, 0),
         Size = UDim2.new(0, finalWidth, 0, 38)
     }):Play()
 
-    -- Таймер
     TweenService:Create(progressInner, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
         Size = UDim2.new(0, 0, 0, 2)
     }):Play()
@@ -265,4 +246,4 @@ function Notify.Mini(type, text, duration)
     end)
 end
 
-return Notify
+return Library
