@@ -9,6 +9,7 @@ local COLORS = {
     Background_Bottom = Color3.fromRGB(25, 25, 30),
     Text_Title = Color3.fromRGB(255, 255, 255),
     Text_Desc = Color3.fromRGB(200, 200, 210),
+	Mini_Background = Color3.fromRGB(30, 30, 35),
     
     Success = Color3.fromRGB(140, 100, 255),
     Warning = Color3.fromRGB(255, 190, 70),
@@ -164,6 +165,99 @@ function Notify.New(type, title, text, duration)
         local out = TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {
             Position = UDim2.new(1.3, 0, 0, 0),
             Size = UDim2.new(1, 0, 0, 0)
+        })
+        out:Play()
+        out.Completed:Wait()
+        frame:Destroy()
+    end)
+end
+
+function Notify.Mini(type, text, duration)
+    duration = duration or 3 -- Быстрые уведомления обычно висят меньше
+    local accentColor = COLORS[type] or COLORS.Success
+    local container = getContainer()
+    
+    -- [[ КАРТОЧКА ]]
+    local frame = Instance.new("Frame")
+    frame.Name = "MiniNotification"
+    frame.Size = UDim2.new(0, 0, 0, 38) -- Фиксированная высота для компактности
+    frame.BackgroundColor3 = COLORS.Mini_Background
+    frame.BorderSizePixel = 0
+    frame.ClipsDescendants = true
+    frame.Parent = container
+    
+    local mainCorner = Instance.new("UICorner")
+    mainCorner.CornerRadius = UDim.new(0, 8)
+    mainCorner.Parent = frame
+    
+    -- Тонкая обводка для стиля
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = accentColor
+    stroke.Thickness = 1
+    stroke.Transparency = 0.7
+    stroke.Parent = frame
+
+    -- [[ КОНТЕНТ ]]
+    local inner = Instance.new("Frame")
+    inner.Size = UDim2.new(1, 0, 1, 0)
+    inner.BackgroundTransparency = 1
+    inner.Parent = frame
+
+    -- Акцентный индикатор (слева)
+    local indicator = Instance.new("Frame")
+    indicator.Size = UDim2.new(0, 4, 0, 16)
+    indicator.Position = UDim2.new(0, 10, 0.5, 0)
+    indicator.AnchorPoint = Vector2.new(0, 0.5)
+    indicator.BackgroundColor3 = accentColor
+    indicator.BorderSizePixel = 0
+    indicator.Parent = inner
+    
+    local indCorner = Instance.new("UICorner")
+    indCorner.CornerRadius = UDim.new(1, 0)
+    indCorner.Parent = indicator
+
+    -- Текст сообщения (в одну строку)
+    local msgLbl = Instance.new("TextLabel")
+    msgLbl.Size = UDim2.new(1, -35, 1, 0)
+    msgLbl.Position = UDim2.new(0, 24, 0, 0)
+    msgLbl.Text = text
+    msgLbl.TextColor3 = Color3.fromRGB(240, 240, 240)
+    msgLbl.Font = Enum.Font.GothamMedium
+    msgLbl.TextSize = 13
+    msgLbl.TextXAlignment = Enum.TextXAlignment.Left
+    msgLbl.BackgroundTransparency = 1
+    msgLbl.Parent = inner
+
+    -- [[ ПОЛОСКА-РАЗДЕЛИТЕЛЬ (ТАЙМЕР) ]]
+    -- Сделаем её совсем тонкой снизу
+    local progressInner = Instance.new("Frame")
+    progressInner.Size = UDim2.new(1, 0, 0, 2)
+    progressInner.Position = UDim2.new(0, 0, 1, -2)
+    progressInner.BackgroundColor3 = accentColor
+    progressInner.BorderSizePixel = 0
+    progressInner.Parent = frame
+
+    -- [[ АНИМАЦИЯ ]]
+    local textWidth = msgLbl.TextBounds.X + 45 -- Считаем ширину по тексту
+    local finalWidth = math.clamp(textWidth, 120, 300) -- Ограничиваем размеры
+
+    frame.Position = UDim2.new(1.3, 0, 0, 0)
+    
+    -- Плавное появление
+    TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+        Position = UDim2.new(0, 0, 0, 0),
+        Size = UDim2.new(0, finalWidth, 0, 38)
+    }):Play()
+
+    -- Таймер
+    TweenService:Create(progressInner, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
+        Size = UDim2.new(0, 0, 0, 2)
+    }):Play()
+
+    task.delay(duration, function()
+        local out = TweenService:Create(frame, TweenInfo.new(0.4, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {
+            Position = UDim2.new(1.3, 0, 0, 0),
+            BackgroundTransparency = 1
         })
         out:Play()
         out.Completed:Wait()
