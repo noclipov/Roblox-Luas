@@ -1,39 +1,74 @@
 local Library = {}
 Library.Link = "https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Libs/wh.lua"
--- loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Libs/wh.lua"))()
+
 Library.Send = function(title, desc, color, link)
-	color = tonumber(color) or tonumber(0x825AFF)
-	local data = {
-		username = game.Players.LocalPlayer.Name,
-		avatar_url = "https://i.imgur.com/x4q1HDg.png",
-		content = "",
-		embeds = {{
+    local lp = game.Players.LocalPlayer
+    color = tonumber(color) or 0x825AFF
+    
+    -- Получаем аватар игрока (голову) для Thumbnail
+    local headShot = `https://www.roblox.com/headshot-thumbnail/image?userId={lp.UserId}&width=420&height=420&format=png`
+
+    local data = {
+        username = "Noclipov System",
+        avatar_url = "https://i.imgur.com/x4q1HDg.png",
+        embeds = {{
             author = {
-                name = `Noclipov Webhooks`,
-				url = Library.Link
+                name = "Noclipov Webhook Service",
+                icon_url = "https://i.imgur.com/x4q1HDg.png",
+                url = Library.Link
             },
-			title = title or "Title",
-			fields = {
-				{name = "Source", value = `[github]({Library.Link})`, inline=true},
-				{name = "Place", value = `[{game.PlaceId}](https://www.roblox.com/games/{game.PlaceId})`, inline=true},
-				{name = "Sender", value = `[{game.Players.LocalPlayer.Name}](https://www.roblox.com/users/{game.Players.LocalPlayer.UserId})`, inline=true},
-			},
-			description = desc or "Description",
-			type = "rich",
-			color = color,
-			footer = {
-				text = "Thanks for using!",
-				icon_url = "https://i.imgur.com/x4q1HDg.png"
-			}
-		}}
-	}
-	data = game:GetService("HttpService"):JSONEncode(data)
-	local request = http_request or request or HttpPost or syn.request
-	request({
-		Url = link,
-		Body = data,
-		Method = "POST",
-		Headers = {["content-type"] = "application/json"}
-	})
+            title = title or "🔔 Notification",
+            description = desc or "No description provided.",
+            color = color,
+            
+            -- Поля с информацией (теперь выглядят аккуратнее)
+            fields = {
+                {
+                    name = "👤 User Information",
+                    value = string.format("• **Name:** [%s](https://www.roblox.com/users/%s)\n• **ID:** `%s`", lp.Name, lp.UserId, lp.UserId),
+                    inline = false
+                },
+                {
+                    name = "🎮 Game Context",
+                    value = string.format("• **Place:** [%s](https://www.roblox.com/games/%s)\n• **JobId:** `%s` ", game.PlaceId, game.PlaceId, game.JobId),
+                    inline = false
+                },
+                {
+                    name = "🔗 Source",
+                    value = string.format("[GitHub Repository](%s)", Library.Link),
+                    inline = true
+                }
+            },
+            
+            -- Миниатюра игрока справа
+            thumbnail = {
+                url = headShot
+            },
+            
+            footer = {
+                text = "Noclipov Runtime Environment • " .. os.date("%X"),
+                icon_url = "https://i.imgur.com/x4q1HDg.png"
+            },
+            
+            -- Добавляет время отправки внизу сообщения
+            timestamp = DateTime.now():ToIsoDate()
+        }}
+    }
+
+    local success, encoded = pcall(function() return game:GetService("HttpService"):JSONEncode(data) end)
+    if not success then return warn("Failed to encode JSON") end
+
+    local request = http_request or request or HttpPost or (syn and syn.request)
+    if request then
+        request({
+            Url = link,
+            Body = encoded,
+            Method = "POST",
+            Headers = {["Content-Type"] = "application/json"}
+        })
+    else
+        warn("Executor does not support requests.")
+    end
 end
+
 return Library
