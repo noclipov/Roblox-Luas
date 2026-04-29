@@ -1,22 +1,26 @@
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 
-local Library = {}
-Library.Link = "https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Libs/NotifyModule.lua"
--- loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Libs/NotifyModule.lua"))()
+local Notify = {}
+
+-- [[ КОНФИГУРАЦИЯ ЦВЕТОВ ]]
 local COLORS = {
     Background_Top = Color3.fromRGB(35, 35, 45),
     Background_Bottom = Color3.fromRGB(25, 25, 30),
     Mini_Background = Color3.fromRGB(30, 30, 35),
     Text_Title = Color3.fromRGB(255, 255, 255),
     Text_Desc = Color3.fromRGB(200, 200, 210),
-
-    Success = Color3.fromRGB(140, 100, 255),
-    Warning = Color3.fromRGB(255, 190, 70),
-    Error   = Color3.fromRGB(255, 90, 90),
+    
+    -- Акценты
+    Success = Color3.fromRGB(140, 100, 255), -- Фиолетовый
+    Warning = Color3.fromRGB(255, 190, 70),  -- Янтарный
+    Error   = Color3.fromRGB(255, 90, 90),   -- Красный
 }
+
 local NOTIFY_WIDTH = 340
 local NOTIFY_PADDING = 12
+
+-- Вспомогательная функция для создания контейнера
 local function getContainer()
     local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
     local sg = playerGui:FindFirstChild("Noclipov_UI_Storage")
@@ -46,7 +50,8 @@ local function getContainer()
     return sg.NotifyContainer
 end
 
-Library.New = function(type, title, text, duration)
+-- [[ ВЕРСИЯ 1: ПОЛНОЕ УВЕДОМЛЕНИЕ С РАЗДЕЛИТЕЛЕМ ]]
+function Notify.New(type, title, text, duration)
     duration = duration or 5
     local accentColor = COLORS[type] or COLORS.Success
     local container = getContainer()
@@ -164,7 +169,8 @@ Library.New = function(type, title, text, duration)
     end)
 end
 
-Library.Mini = function(type, text, duration)
+-- [[ ВЕРСИЯ 2: КОМПАКТНОЕ (МИНИ) УВЕДОМЛЕНИЕ ]]
+function Notify.Mini(type, text, duration)
     duration = duration or 3
     local accentColor = COLORS[type] or COLORS.Success
     local container = getContainer()
@@ -215,8 +221,8 @@ Library.Mini = function(type, text, duration)
     msgLbl.Parent = inner
 
     local progressInner = Instance.new("Frame")
-    progressInner.Size = UDim2.new(1, 0, 0, 2)
-    progressInner.Position = UDim2.new(0, 0, 1, -2)
+    progressInner.Size = UDim2.new(1, -10, 0, 2)
+    progressInner.Position = UDim2.new(0, 10, 1, -2)
     progressInner.BackgroundColor3 = accentColor
     progressInner.BorderSizePixel = 0
     progressInner.Parent = frame
@@ -246,4 +252,4 @@ Library.Mini = function(type, text, duration)
     end)
 end
 
-return Library
+return Notify
