@@ -91,6 +91,14 @@ end
 Library.get_teleport = function()
     setclipboard(string.format("game:GetService('TeleportService'):TeleportToPlaceInstance(%s, '%s', game.Players.LocalPlayer)", tostring(game.PlaceId), game.JobId))
 end
+Library.EquipTool = function(name, instance)
+	if not lp.Character then return end
+	if name and lp.Backpack:FindFirstChild(name) or instance then
+		lp.Character:WaitForChild("Humanoid"):EquipTool(name and lp.Backpack[name] or instance)
+	elseif not name and not instance then
+		lp.Character:WaitForChild("Humanoid"):UnequipTools()
+	end
+end
 Library.ss = function()
     msg.Mini("Success", "Simple Spy: Loading", 2)
     loadstring(game:HttpGetAsync("https://raw.githubusercontent.com/78n/SimpleSpy/main/SimpleSpySource.lua"))()
@@ -101,13 +109,5 @@ Library.dd = function()
 end
 Library.aa = function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Anti-AFK.lua"))()
-end
-Library.EquipTool = function(name, instance)
-	if not lp.Character then return end
-	if name and lp.Backpack:FindFirstChild(name) or instance then
-		lp.Character:WaitForChild("Humanoid"):EquipTool(name and lp.Backpack[name] or instance)
-	elseif not name and not instance then
-		lp.Character:WaitForChild("Humanoid"):UnequipTools()
-	end
 end
 return Library
