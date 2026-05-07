@@ -1,5 +1,6 @@
 -- loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Anti-AFK.lua"))()
 if not _G.AntiAfkLoaded then
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Libs/NotifyModule.lua"))().Mini("Success", "Anti-AFK: Loading", 2)
 	_G.AntiAfkLoaded = false
 	local gcn = getconnections or get_signal_cons
 	if gcn then
@@ -18,7 +19,6 @@ if not _G.AntiAfkLoaded then
 		VirtualUser:CaptureController()
 		VirtualUser:ClickButton2(Vector2.new())
 	end)
-	loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Libs/NotifyModule.lua"))().Mini("Success", "Anti-AFK Loaded", 2)
 	_G.AntiAfkLoaded = true
 	queue_on_teleport('_G.AntiAfkLoaded = false; task.wait(0.2); loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Anti-AFK.lua"))()')
 end

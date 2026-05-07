@@ -92,12 +92,12 @@ Library.get_teleport = function()
     setclipboard(string.format("game:GetService('TeleportService'):TeleportToPlaceInstance(%s, '%s', game.Players.LocalPlayer)", tostring(game.PlaceId), game.JobId))
 end
 Library.ss = function()
+    msg.Mini("Success", "Simple Spy: Loading", 2)
     loadstring(game:HttpGetAsync("https://raw.githubusercontent.com/78n/SimpleSpy/main/SimpleSpySource.lua"))()
-    msg.Mini("Success", "Simple Spy Loaded", 2)
 end
 Library.dd = function()
+    msg.Mini("Success", "Dark Dex: Loading", 2)
     loadstring(game:HttpGet("https://github.com/AZYsGithub/DexPlusPlus/releases/latest/download/out.lua"))()
-    msg.Mini("Success", "Dark Dex Loaded", 2)
 end
 Library.aa = function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Anti-AFK.lua"))()
