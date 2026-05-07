@@ -102,4 +102,12 @@ end
 Library.aa = function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Anti-AFK.lua"))()
 end
+Library.EquipTool = function(name, instance)
+	if not lp.Character then return end
+	if name and lp.Backpack:FindFirstChild(name) or instance then
+		lp.Character:WaitForChild("Humanoid"):EquipTool(name and lp.Backpack[name] or instance)
+	elseif not name and not instance then
+		lp.Character:WaitForChild("Humanoid"):UnequipTools()
+	end
+end
 return Library
