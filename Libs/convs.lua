@@ -6,7 +6,7 @@ Library.Round = function(num, numDecimalPlaces)
 	return math.floor(num * mult + 0.5) / mult
 end
 Library.ToLetters = function(num, commanums)
-	commanums = commanums or 2
+	commanums = commanums > -1 and commanums or 2
 	if num / 1e78 >=1 then
 		newnum = num / 1e78
 		return Library.Round(newnum, commanums).."QiVi"
@@ -30,31 +30,31 @@ Library.ToLetters = function(num, commanums)
 		return Library.Round(newnum, commanums).."NoV"
 	elseif num / 1e57 >=1 then
 		newnum = num / 1e57
-		return Library.Round(newnum, commanums).."OcD"
+		return Library.Round(newnum, commanums).."OcDc"
 	elseif num / 1e54 >=1 then
 		newnum = num / 1e54
-		return Library.Round(newnum, commanums).."SpD"
+		return Library.Round(newnum, commanums).."SpDc"
 	elseif num / 1e51 >=1 then
 		newnum = num / 1e51
-		return Library.Round(newnum, commanums).."SxD"
+		return Library.Round(newnum, commanums).."SxDc"
 	elseif num / 1e48 >=1 then
 		newnum = num / 1e48
-		return Library.Round(newnum, commanums).."QiDe"
+		return Library.Round(newnum, commanums).."QiDc"
 	elseif num / 1e45 >=1 then
 		newnum = num / 1e45
-		return Library.Round(newnum, commanums).."QaDe"
+		return Library.Round(newnum, commanums).."QaDc"
 	elseif num / 1e42 >=1 then
 		newnum = num / 1e42
-		return Library.Round(newnum, commanums).."TDe"
+		return Library.Round(newnum, commanums).."TDc"
 	elseif num / 1e39 >=1 then
 		newnum = num / 1e39
-		return Library.Round(newnum, commanums).."DDe"
+		return Library.Round(newnum, commanums).."DDc"
 	elseif num / 1e36 >=1 then
 		newnum = num / 1e36
-		return Library.Round(newnum, commanums).."UDe"
+		return Library.Round(newnum, commanums).."UDc"
 	elseif num / 1e33 >=1 then
 		newnum = num / 1e33
-		return Library.Round(newnum, commanums).."De"
+		return Library.Round(newnum, commanums).."Dc"
 	elseif num / 1e30 >=1 then
 		newnum = num / 1e30
 		return Library.Round(newnum, commanums).."No"
