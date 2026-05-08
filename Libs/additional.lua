@@ -19,11 +19,8 @@ Library.is_moving = function(humanoid)
     if (humanoid.MoveDirection == Vector3.new(0,0,0) and humanoid:GetState() ~= Enum.HumanoidStateType.Jumping and humanoid:GetState() ~= Enum.HumanoidStateType.Freefall) then return false end
     return true
 end
-Library.is_exist = function(instance)
-    if instance and instance.Parent:FindFirstChild(instance.Name) then return true end
-    return false
-end
 Library.is_alive = function(ply)
+	if not ply.Character then return false end
     if ply.Character:FindFirstChild("Humanoid") and ply.Character:FindFirstChild("Humanoid").Health > 0 then return true end
     return false
 end
@@ -36,13 +33,13 @@ Library.str = function(value)
 end
 Library.has_value = function(src, value)
     if type(src) == "string" then
-        return string.find(src, value) and true
+        return string.find(src, value) and true or false
     elseif type(src) == "table" then
         for i,v in pairs(src) do if v == value then return true end end
     end
     return false
 end
-Library.getping = function() 
+Library.get_ping = function() 
     return lp:GetNetworkPing()*2000
 end
 Library.get_friends = function(player)
@@ -71,7 +68,7 @@ Library.join_place = function(placeid, jobid)
         ts:Teleport(placeid, game.Players.LocalPlayer)
     end
 end
-Library.hlplayer = function(ply, fillcolor, outlinecolor, filltransparency, outlinetransparency)
+Library.hl_player = function(ply, fillcolor, outlinecolor, filltransparency, outlinetransparency)
     if not ply.Character then return end
 	fillcolor = fillcolor or Color3.fromRGB(0,0,0)
     outlinecolor = outlinecolor or Color3.fromRGB(255,255,255)
@@ -88,14 +85,14 @@ Library.hlplayer = function(ply, fillcolor, outlinecolor, filltransparency, outl
     hl.OutlineTransparency = outlinetransparency
     return hl
 end
-Library.unhlplayer = function(ply)
+Library.unhl_player = function(ply)
 	if not ply.Character or not ply.Character:FindFirstChild("U_Highlight") then return end
 	ply.Character:FindFirstChild("U_Highlight"):Remove()
 end
 Library.get_teleport = function()
     setclipboard(string.format("game:GetService('TeleportService'):TeleportToPlaceInstance(%s, '%s', game.Players.LocalPlayer)", tostring(game.PlaceId), game.JobId))
 end
-Library.EquipTool = function(name, instance)
+Library.equip_tool = function(name, instance)
 	if not lp.Character then return end
 	if name and lp.Backpack:FindFirstChild(name) or instance then
 		lp.Character:WaitForChild("Humanoid"):EquipTool(name and lp.Backpack[name] or instance)
@@ -114,4 +111,28 @@ end
 Library.aa = function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Anti-AFK.lua"))()
 end
+
+local alias_list = {
+	["dist_to"] = {"distTo","DistTo","distto"},
+	["is_moving"] = {"isMoving","IsMoving","ismoving"},
+	["is_alive"] = {"isAlive","IsAlive","isalive"},
+	["has_value"] = {"hasValue","HasValue","hasvalue"},
+	["get_ping"] = {"getPing","GetPing","getping"},
+	["get_friends"] = {"getFriend","GetFriends","getfriends"},
+	["format_number"] = {"formatNumber","FormatNumber","formatnumber"},
+	["join_place"] = {"joinPlace","JoinPlace","joinplace"},
+	["hl_player"] = {"hlPlayer","HLPlayer","hlplayer"},
+	["unhl_player"] = {"unhlPlayer","UnHLPlayer","unhlplayer"},
+	["get_teleport"] = {"getTeleport","GetTeleport","getteleport"},
+	["equip_tool"] = {"equipTool","EquipTool","equiptool"},
+}
+
+for src, aliases in pairs(alias_list) do
+	if Library[src] then
+		for _, alias in pairs(aliases) do
+			Library[alias] = Library[src]
+		end
+	end
+end
+
 return Library
