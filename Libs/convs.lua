@@ -6,7 +6,7 @@ Library.Round = function(num, numDecimalPlaces)
 	return math.floor(num * mult + 0.5) / mult
 end
 Library.ToLetters = function(num, commanums)
-	commanums = commanums > -1 and commanums or 2
+	commanums = (commanums and commanums > -1) and commanums or 2
 	if num / 1e78 >=1 then
 		newnum = num / 1e78
 		return Library.Round(newnum, commanums).."QiVi"
