@@ -100,6 +100,14 @@ Library.equip_tool = function(name, instance)
 		lp.Character:WaitForChild("Humanoid"):UnequipTools()
 	end
 end
+Library.inside_cube = function(point, cube)
+	if not cube then return end
+	point = point or lp.Character.PrimaryPart
+	local relative = cframe:PointToObjectSpace(point)
+	return math.abs(relative.X) <= cube.Size.X / 2
+		and math.abs(relative.Y) <= cube.Size.Y / 2
+		and math.abs(relative.Z) <= cube.Size.Z / 2
+end
 Library.ss = function()
     msg.Mini("Success", "Simple Spy: Loading", 2)
     loadstring(game:HttpGetAsync("https://raw.githubusercontent.com/78n/SimpleSpy/main/SimpleSpySource.lua"))()
@@ -125,6 +133,7 @@ local alias_list = {
 	["unhl_player"] = {"unhlPlayer","UnHLPlayer","unhlplayer"},
 	["get_teleport"] = {"getTeleport","GetTeleport","getteleport"},
 	["equip_tool"] = {"equipTool","EquipTool","equiptool"},
+	["inside_cube"] = {"insideCube","InsideCube","insidecube"},
 }
 
 for src, aliases in pairs(alias_list) do
