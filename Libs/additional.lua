@@ -112,11 +112,8 @@ end
 Library.chat = function(text)
 	ChatService.TextChannels.RBXGeneral:SendAsync(text)
 end
-Library.chat_filter = function(...)
-	local conditions = {...}
-	for _, condition in conditions do
-		ChatService.TextChannels.RBXGeneral.ShouldDeliverCallback = condition
-	end
+Library.chat_filter = function(condition)
+	ChatService.TextChannels.RBXGeneral.ShouldDeliverCallback = condition
 end
 Library.ss = function()
     msg.Mini("Success", "Simple Spy: Loading", 2)
