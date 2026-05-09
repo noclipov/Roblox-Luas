@@ -1,5 +1,6 @@
 local Library = {}
-local ts = game:GetService('TeleportService')
+local TeleportService = game:GetService('TeleportService')
+local ChatService = game:GetService("TextChatService")
 local msg = loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Libs/NotifyModule.lua"))()
 local pls = game.Players
 local lp = pls.LocalPlayer
@@ -63,9 +64,9 @@ Library.join_place = function(placeid, jobid)
     placeid = placeid or game.PlaceId
     jobid = jobid and tostring(jobid) or jobid
     if jobid then
-        ts:TeleportToPlaceInstance(placeid, jobid, game.Players.LocalPlayer)
+        TeleportService:TeleportToPlaceInstance(placeid, jobid, game.Players.LocalPlayer)
     else
-        ts:Teleport(placeid, game.Players.LocalPlayer)
+        TeleportService:Teleport(placeid, game.Players.LocalPlayer)
     end
 end
 Library.hl_player = function(ply, fillcolor, outlinecolor, filltransparency, outlinetransparency)
@@ -108,6 +109,15 @@ Library.inside_cube = function(point, cube)
 		and math.abs(relative.Y) <= cube.Size.Y / 2
 		and math.abs(relative.Z) <= cube.Size.Z / 2
 end
+Library.chat = function(text)
+	ChatService.TextChannels.RBXGeneral:SendAsync(text)
+end
+Library.chat_filter = function(...)
+	local conditions = {...}
+	for _, condition in conditions do
+		ChatService.TextChannels.RBXGeneral.ShouldDeliverCallback = condition
+	end
+end
 Library.ss = function()
     msg.Mini("Success", "Simple Spy: Loading", 2)
     loadstring(game:HttpGetAsync("https://raw.githubusercontent.com/78n/SimpleSpy/main/SimpleSpySource.lua"))()
@@ -134,6 +144,8 @@ local alias_list = {
 	["get_teleport"] = {"getTeleport","GetTeleport","getteleport"},
 	["equip_tool"] = {"equipTool","EquipTool","equiptool"},
 	["inside_cube"] = {"insideCube","InsideCube","insidecube"},
+	["chat"] = {"Chat","message","send_message", "Message", "SendMessage", "sendMessage"},
+	["chat_filter"] = {"filter","ChatFilter","chatFilter", "chatfilter"},
 }
 
 for src, aliases in pairs(alias_list) do
