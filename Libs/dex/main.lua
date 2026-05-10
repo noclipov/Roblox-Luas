@@ -358,8 +358,8 @@ Main = (function()
 
 				-- Check if local copy exists with matching hashs
 				local hashfunc = (syn and syn.crypt.hash) or function() return "" end
-				local filePath = "noclipov/dex/modules/"..name..".lua"
-				local s,moduleStr = pcall(env.readfile,filePath)
+				local filePath = "https://raw.githubusercontent.com/noclipov/Roblox-Luas/refs/heads/main/Libs/dex/modules/"..name..".lua"
+				local s,moduleStr = pcall(game:HttpGet,filePath)
 
 				if s and hashfunc(moduleStr) == hashs[name] then
 					control = loadstring(moduleStr)()
