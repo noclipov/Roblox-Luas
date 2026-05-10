@@ -60,7 +60,7 @@ local function getContainer()
         
         local container = Instance.new("Frame")
         container.Name = "NotifyContainer"
-        container.Position = UDim2.new(1, -25, 0.85, -25)
+        container.Position = UDim2.new(1, -25, 1, -25)
         container.Size = UDim2.new(0, NOTIFY_WIDTH, 0.7, 0)
         container.AnchorPoint = Vector2.new(1, 1)
         container.BackgroundTransparency = 1
