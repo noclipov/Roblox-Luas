@@ -365,7 +365,7 @@ Main = (function()
 					control = loadstring(moduleStr)()
 				else
 					-- Download and cache
-					local s,moduleStr = pcall(oldgame.HttpGet, game, "https://api.github.com/repos/noclipov/Roblox-Luas/Libs/dex/Modules/"..name..".lua")
+					local s,moduleStr = pcall(oldgame.HttpGet, game, "https://raw.githubusercontent.com/noclipov/Roblox-Luas/refs/heads/main/Libs/dex/modules"..name..".lua")
 					if not s then Main.Error("Failed to get external module data of "..name) end
 
 					env.writefile(filePath,moduleStr)
