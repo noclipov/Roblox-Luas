@@ -121,7 +121,7 @@ Library.ss = function()
 end
 Library.dd = function()
     msg.Mini("Purple", "Dark Dex: Loading", 5)
-    loadstring(game:HttpGet("https://github.com/AZYsGithub/DexPlusPlus/releases/latest/download/out.lua"))()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/refs/heads/main/Libs/dex/main.lua"))()
 end
 Library.aa = function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Anti-AFK.lua"))()
