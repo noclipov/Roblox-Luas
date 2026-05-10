@@ -61,9 +61,11 @@ local function getContainer()
         local container = Instance.new("Frame")
         container.Name = "NotifyContainer"
         container.Position = UDim2.new(1, -25, 1, -25)
-        container.Size = UDim2.new(0, NOTIFY_WIDTH, 0.7, 0)
+        container.Size = UDim2.new(0, NOTIFY_WIDTH, 0, 0)
+        container.AutomaticSize = Enum.AutomaticSize.Y
         container.AnchorPoint = Vector2.new(1, 1)
         container.BackgroundTransparency = 1
+        container.BorderSizePixel = 0
         container.Parent = sg
         
         local layout = Instance.new("UIListLayout")
@@ -90,14 +92,12 @@ function Notify.New(customColorOrPreset, title, text, duration, callback, button
     local hasCallback = typeof(callback) == "function" or not hasTimer
     buttonText = buttonText or (hasTimer and "ОТКРЫТЬ" or "ЗАКРЫТЬ")
     
-    -- Главный невидимый контейнер-заглушка для UIListLayout
     local placeholder = Instance.new("Frame")
     placeholder.Size = UDim2.new(1, 0, 0, 0)
     placeholder.BackgroundTransparency = 1
     placeholder.BorderSizePixel = 0
     placeholder.Parent = container
 
-    -- Сам фрейм карточки
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, 0, 1, 0)
     frame.Position = UDim2.new(1.3, 0, 0, 0)
@@ -117,7 +117,6 @@ function Notify.New(customColorOrPreset, title, text, duration, callback, button
     gradient.Rotation = 90
     gradient.Parent = frame
 
-    -- Заголовок (SourceSansBold)
     local titleLbl = Instance.new("TextLabel")
     titleLbl.Size = UDim2.new(1, -45, 0, 18)
     titleLbl.Position = UDim2.new(0, 25, 0, 12)
@@ -129,8 +128,8 @@ function Notify.New(customColorOrPreset, title, text, duration, callback, button
     titleLbl.BackgroundTransparency = 1
     titleLbl.Parent = frame
 
-    -- Тонкий таймер под заголовком
-    local progressInner
+    -- Тонкий таймер под заголовком (Оптимизирован для плавности)
+    local progressGradient
     if hasTimer then
         local barContainer = Instance.new("Frame")
         barContainer.Size = UDim2.new(1, -45, 0, 2)
@@ -145,18 +144,28 @@ function Notify.New(customColorOrPreset, title, text, duration, callback, button
         barCorner.CornerRadius = UDim.new(1, 0)
         barCorner.Parent = barContainer
 
-        progressInner = Instance.new("Frame")
+        local progressInner = Instance.new("Frame")
         progressInner.Size = UDim2.new(1, 0, 1, 0)
-        progressInner.BackgroundColor3 = accentColor
+        progressInner.BackgroundColor3 = Color3.fromRGB(255, 255, 255) -- Белый для применения градиента
         progressInner.BorderSizePixel = 0
         progressInner.Parent = barContainer
 
         local innerCorner = Instance.new("UICorner")
         innerCorner.CornerRadius = UDim.new(1, 0)
         innerCorner.Parent = progressInner
+
+        -- Плавный аппаратный градиент-слайдер вместо изменения размера фрейма
+        progressGradient = Instance.new("UIGradient")
+        progressGradient.Color = ColorSequence.new(accentColor)
+        progressGradient.Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0),
+            NumberSequenceKeypoint.new(0.999, 0),
+            NumberSequenceKeypoint.new(1, 1)
+        })
+        progressGradient.Offset = Vector2.new(0, 0)
+        progressGradient.Parent = progressInner
     end
 
-    -- Расчет высоты
     local availableWidth = NOTIFY_WIDTH - 45
     local descHeight = game:GetService("TextService"):GetTextSize(text, 14, FONTS.Desc, Vector2.new(availableWidth, 1000)).Y
     
@@ -169,7 +178,6 @@ function Notify.New(customColorOrPreset, title, text, duration, callback, button
         finalHeight = math.max(descHeight + textYOffset + 18, 84)
     end
 
-    -- Описание
     local descLbl = Instance.new("TextLabel")
     descLbl.Size = UDim2.new(1, -45, 0, descHeight)
     descLbl.Position = UDim2.new(0, 25, 0, textYOffset)
@@ -184,7 +192,6 @@ function Notify.New(customColorOrPreset, title, text, duration, callback, button
     descLbl.BackgroundTransparency = 1
     descLbl.Parent = frame
 
-    -- Левая декоративная линия
     local accentLine = Instance.new("Frame")
     accentLine.Size = UDim2.new(0, 3, 1, -20)
     accentLine.Position = UDim2.new(0, 12, 0, 10)
@@ -196,7 +203,6 @@ function Notify.New(customColorOrPreset, title, text, duration, callback, button
     lineCorner.CornerRadius = UDim.new(1, 0)
     lineCorner.Parent = accentLine
 
-    -- Функция плавного улетания вправо
     local function closeNotification()
         local slideOut = TweenService:Create(frame, TweenInfo.new(0.4, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {
             Position = UDim2.new(1.3, 0, 0, 0)
@@ -213,7 +219,6 @@ function Notify.New(customColorOrPreset, title, text, duration, callback, button
         placeholder:Destroy()
     end
 
-    -- Кнопка действия (SourceSansSemibold)
     local btnConnection
     if hasCallback then
         local textService = game:GetService("TextService")
@@ -261,17 +266,16 @@ function Notify.New(customColorOrPreset, title, text, duration, callback, button
         end)
     end
 
-    -- Появление карточки
     placeholder.Size = UDim2.new(1, 0, 0, finalHeight)
     
     TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
         Position = UDim2.new(0, 0, 0, 0)
     }):Play()
 
-    -- Логика таймера
-    if hasTimer and progressInner then
-        local progressTween = TweenService:Create(progressInner, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
-            Size = UDim2.new(0, 0, 1, 0)
+    -- Плавное аппаратное убывание таймера через сдвиг градиента
+    if hasTimer and progressGradient then
+        local progressTween = TweenService:Create(progressGradient, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
+            Offset = Vector2.new(-1, 0)
         })
         progressTween:Play()
 
@@ -292,17 +296,15 @@ function Notify.Mini(customColorOrPreset, text, duration, callback)
     local hasTimer = not isInfinite(duration)
     local hasCallback = typeof(callback) == "function"
     
-    -- Создаем абсолютно прозрачный плейсхолдер для UIListLayout
     local placeholder = Instance.new("Frame")
     placeholder.Size = UDim2.new(1, 0, 0, 36)
     placeholder.BackgroundTransparency = 1
     placeholder.BorderSizePixel = 0
     placeholder.Parent = container
 
-    -- Сама плашка
     local frame = Instance.new(hasCallback and "TextButton" or "Frame")
     frame.Size = UDim2.new(1, 0, 1, 0)
-    frame.Position = UDim2.new(1.3, 0, 0, 0) -- Появление справа
+    frame.Position = UDim2.new(1.3, 0, 0, 0)
     frame.BackgroundColor3 = COLORS.Mini_Background
     frame.BackgroundTransparency = 0.15
     frame.BorderSizePixel = 0
@@ -313,15 +315,10 @@ function Notify.Mini(customColorOrPreset, text, duration, callback)
         frame.AutoButtonColor = false
     end
     
-    -- Закругление углов напрямую на основном фрейме
     local mainCorner = Instance.new("UICorner")
     mainCorner.CornerRadius = UDim.new(0, 8)
     mainCorner.Parent = frame
-    
-    -- [[ УДАЛЕНО: UIStroke полностью убран из Notify.Mini для однотипности ]]
-    -- [ Раньше здесь создавалась обводка ]
 
-    -- Вертикальный левый маркер-индикатор
     local indicator = Instance.new("Frame")
     indicator.Size = UDim2.new(0, 3, 0, 16)
     indicator.Position = UDim2.new(0, 12, 0.5, 0)
@@ -334,7 +331,6 @@ function Notify.Mini(customColorOrPreset, text, duration, callback)
     indCorner.CornerRadius = UDim.new(1, 0)
     indCorner.Parent = indicator
 
-    -- Текст мини-сообщения
     local msgLbl = Instance.new("TextLabel")
     msgLbl.Size = UDim2.new(1, -36, 1, hasTimer and -12 or 0)
     msgLbl.Position = UDim2.new(0, 24, 0, hasTimer and 3 or 0)
@@ -346,8 +342,8 @@ function Notify.Mini(customColorOrPreset, text, duration, callback)
     msgLbl.BackgroundTransparency = 1
     msgLbl.Parent = frame
 
-    -- Полоска таймера
-    local progressInner
+    -- Полоска таймера в мини-сообщении (Оптимизирована для плавности)
+    local progressGradient
     if hasTimer then
         local progressContainer = Instance.new("Frame")
         progressContainer.Size = UDim2.new(1, -32, 0, 1)
@@ -358,36 +354,33 @@ function Notify.Mini(customColorOrPreset, text, duration, callback)
         progressContainer.ClipsDescendants = true
         progressContainer.Parent = frame
 
-        progressInner = Instance.new("Frame")
+        local progressInner = Instance.new("Frame")
         progressInner.Size = UDim2.new(1, 0, 1, 0)
-        progressInner.AnchorPoint = Vector2.new(0, 0)
-        progressInner.Position = UDim2.new(0, 0, 0, 0)
-        progressInner.BackgroundColor3 = accentColor
+        progressInner.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
         progressInner.BorderSizePixel = 0
         progressInner.Parent = progressContainer
         
-        local timerGradient = Instance.new("UIGradient")
-        timerGradient.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(255,255,255)),
-            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255,255,255)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(255,255,255))
+        -- Специальный скользящий градиент для плавного убывания
+        progressGradient = Instance.new("UIGradient")
+        progressGradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, accentColor),
+            ColorSequenceKeypoint.new(1, accentColor)
         })
-        timerGradient.Transparency = NumberSequence.new({
-            NumberSequenceKeypoint.new(0, 0.3),
-            NumberSequenceKeypoint.new(0.5, 0),
-            NumberSequenceKeypoint.new(1, 0.3)
+        progressGradient.Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0),
+            NumberSequenceKeypoint.new(0.999, 0),
+            NumberSequenceKeypoint.new(1, 1)
         })
-        timerGradient.Parent = progressInner
+        progressGradient.Offset = Vector2.new(0, 0)
+        progressGradient.Parent = progressInner
     end
 
     local textWidth = msgLbl.TextBounds.X + 42
     local finalWidth = math.round(math.clamp(textWidth, 110, 320))
 
-    -- Применяем финальную ширину
     placeholder.Size = UDim2.new(0, finalWidth, 0, 36)
     frame.Size = UDim2.new(1, 0, 1, 0)
 
-    -- Функция улетания мини-уведомления вправо
     local isDestroyed = false
     local function closeMini()
         if isDestroyed then return end
@@ -409,19 +402,16 @@ function Notify.Mini(customColorOrPreset, text, duration, callback)
         placeholder:Destroy()
     end
 
-    -- Настройка событий при наведении
     local mouseEnterConnection
     local mouseLeaveConnection
     local clickConnection
 
-    -- Защита от случайного закрытия (1 секунда)
     local canCloseWithMouse = false
     task.delay(1, function()
         canCloseWithMouse = true
     end)
 
     if hasCallback then
-        -- [ ИСПРАВЛЕНО: Теперь наведение только подсвечивает фон, без обводки ]
         mouseEnterConnection = frame.MouseEnter:Connect(function()
             TweenService:Create(frame, TweenInfo.new(0.15), {BackgroundTransparency = 0.05}):Play()
         end)
@@ -440,7 +430,7 @@ function Notify.Mini(customColorOrPreset, text, duration, callback)
             task.spawn(callback)
             closeMini()
         end)
-	elseif not hasTimer then
+    else
         mouseEnterConnection = frame.MouseEnter:Connect(function()
             if not canCloseWithMouse then
                 while not canCloseWithMouse do
@@ -453,15 +443,14 @@ function Notify.Mini(customColorOrPreset, text, duration, callback)
         end)
     end
 
-    -- Анимация появления
     TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
         Position = UDim2.new(0, 0, 0, 0)
     }):Play()
 
-    -- Если у уведомления есть таймер
-    if hasTimer and progressInner then
-        local progressTween = TweenService:Create(progressInner, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
-            Size = UDim2.new(0, 0, 1, 0)
+    -- Плавное аппаратное убывание мини-таймера
+    if hasTimer and progressGradient then
+        local progressTween = TweenService:Create(progressGradient, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
+            Offset = Vector2.new(-1, 0)
         })
         progressTween:Play()
         progressTween.Completed:Connect(function()
