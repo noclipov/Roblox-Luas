@@ -430,7 +430,7 @@ function Notify.Mini(customColorOrPreset, text, duration, callback)
             task.spawn(callback)
             closeMini()
         end)
-    else
+    elseif not hasTimer then
         mouseEnterConnection = frame.MouseEnter:Connect(function()
             if not canCloseWithMouse then
                 while not canCloseWithMouse do

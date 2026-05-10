@@ -184,8 +184,8 @@ Main = (function()
 	Main.AppControls = {}
 	Main.Apps = Apps
 	Main.MenuApps = {}
-	Main.GitName = "AZYsGithub"
-	Main.RepoName = "DexPlusPlus"
+	Main.GitName = "noclipov"
+	Main.RepoName = "Roblox-Luas/Libs/dex"
 	Main.GitRepoName = Main.GitName.."/"..Main.RepoName
 
 	Main.DisplayOrders = {
@@ -345,21 +345,10 @@ Main = (function()
 			else
 				-- Get hash data
 				local hashs = Main.ModuleHashData
-				if not hashs then
-					local s,hashDataStr = pcall(oldgame.HttpGet, game, "https://api.github.com/repos/"..Main.GitRepoName.."/ModuleHashs.dat")
-					if not s then Main.Error("Failed to get module hashs") end
-
-					local s,hashData = pcall(service.HttpService.JSONDecode,service.HttpService,hashDataStr)
-					if not s then Main.Error("Failed to decode module hash JSON") end
-
-					hashs = hashData
-					Main.ModuleHashData = hashs
-				end
-
 				-- Check if local copy exists with matching hashs
 				local hashfunc = (syn and syn.crypt.hash) or function() return "" end
-				local filePath = "https://raw.githubusercontent.com/noclipov/Roblox-Luas/refs/heads/main/Libs/dex/modules/"..name..".lua"
-				local s,moduleStr = pcall(game:HttpGet,filePath)
+				local filePath = "noclipov/dex/modules/"..name..".lua"
+				local s,moduleStr = pcall(env.readfile,filePath)
 
 				if s and hashfunc(moduleStr) == hashs[name] then
 					control = loadstring(moduleStr)()
