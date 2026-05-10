@@ -3,22 +3,47 @@ local Players = game:GetService("Players")
 
 local Notify = {}
 
--- [[ КОНФИГУРАЦИЯ ЦВЕТОВ ]]
+-- [[ ТАБЛИЦА ПРИЯТНЫХ ПАСТЕЛЬНЫХ ПРЕСЕТОВ ]]
+local PRESETS = {
+    Purple = Color3.fromRGB(167, 139, 250), -- Элегантный лавандовый (по умолчанию)
+    Mint   = Color3.fromRGB(110, 230, 160), -- Освежающий мятный
+    Coral  = Color3.fromRGB(248, 113, 113), -- Мягкий нежно-красный
+    Honey  = Color3.fromRGB(251, 191, 36),  -- Приглушенный янтарный
+    Sky    = Color3.fromRGB(96, 165, 250),  -- Спокойный небесный
+    Rose   = Color3.fromRGB(244, 114, 182), -- Пыльно-розовый
+}
+
+-- [[ НАДЕЖНЫЕ И ЧЕТКИЕ ШРИФТЫ ]]
+local FONTS = {
+    Title = Enum.Font.SourceSansBold,       
+    Desc  = Enum.Font.SourceSans,           
+    Mini  = Enum.Font.SourceSansSemibold,   
+    Button = Enum.Font.SourceSansSemibold   
+}
+
 local COLORS = {
-    Background_Top = Color3.fromRGB(35, 35, 45),
-    Background_Bottom = Color3.fromRGB(25, 25, 30),
-    Mini_Background = Color3.fromRGB(30, 30, 35),
+    Background_Top = Color3.fromRGB(30, 30, 40),
+    Background_Bottom = Color3.fromRGB(20, 20, 25),
+    Mini_Background = Color3.fromRGB(20, 20, 26),
     Text_Title = Color3.fromRGB(255, 255, 255),
-    Text_Desc = Color3.fromRGB(200, 200, 210),
-    
-    -- Акценты
-    Success = Color3.fromRGB(140, 100, 255), -- Фиолетовый
-    Warning = Color3.fromRGB(255, 190, 70),  -- Янтарный
-    Error   = Color3.fromRGB(255, 90, 90),   -- Красный
+    Text_Desc = Color3.fromRGB(215, 215, 225),
 }
 
 local NOTIFY_WIDTH = 340
-local NOTIFY_PADDING = 12
+local NOTIFY_PADDING = 10
+
+-- Функция выбора пресета или кастомного цвета
+local function resolveColor(customColorOrPreset)
+    if typeof(customColorOrPreset) == "Color3" then
+        return customColorOrPreset
+    elseif typeof(customColorOrPreset) == "string" then
+        local presetColor = PRESETS[customColorOrPreset]
+        if presetColor then
+            return presetColor
+        end
+    end
+    return PRESETS.Purple
+end
 
 -- Вспомогательная функция для создания контейнера
 local function getContainer()
@@ -30,12 +55,13 @@ local function getContainer()
         sg.Name = "Noclipov_UI_Storage"
         sg.ResetOnSpawn = false
         sg.DisplayOrder = 999
+        sg.IgnoreGuiInset = true 
         sg.Parent = playerGui
         
         local container = Instance.new("Frame")
         container.Name = "NotifyContainer"
-        container.Position = UDim2.new(1, -25, 1, -25)
-        container.Size = UDim2.new(0, NOTIFY_WIDTH, 0.8, 0)
+        container.Position = UDim2.new(1, -25, 0.85, -25)
+        container.Size = UDim2.new(0, NOTIFY_WIDTH, 0.7, 0)
         container.AnchorPoint = Vector2.new(1, 1)
         container.BackgroundTransparency = 1
         container.Parent = sg
@@ -50,18 +76,34 @@ local function getContainer()
     return sg.NotifyContainer
 end
 
--- [[ ВЕРСИЯ 1: ПОЛНОЕ УВЕДОМЛЕНИЕ С РАЗДЕЛИТЕЛЕМ ]]
-function Notify.New(type, title, text, duration)
-    duration = duration or 5
-    local accentColor = COLORS[type] or COLORS.Success
+-- Вспомогательная функция для проверки "бесконечного" времени жизни
+local function isInfinite(duration)
+    return duration == nil or duration == 0 or duration == "inf" or duration == math.huge
+end
+
+-- [[ ВЕРСИЯ 1: ПОЛНОЕ УВЕДОМЛЕНИЕ ]]
+function Notify.New(customColorOrPreset, title, text, duration, callback, buttonText)
+    local accentColor = resolveColor(customColorOrPreset)
     local container = getContainer()
     
+    local hasTimer = not isInfinite(duration)
+    local hasCallback = typeof(callback) == "function" or not hasTimer
+    buttonText = buttonText or (hasTimer and "ОТКРЫТЬ" or "ЗАКРЫТЬ")
+    
+    -- Главный невидимый контейнер-заглушка для UIListLayout
+    local placeholder = Instance.new("Frame")
+    placeholder.Size = UDim2.new(1, 0, 0, 0)
+    placeholder.BackgroundTransparency = 1
+    placeholder.BorderSizePixel = 0
+    placeholder.Parent = container
+
+    -- Сам фрейм карточки
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, 0, 0, 0)
+    frame.Size = UDim2.new(1, 0, 1, 0)
+    frame.Position = UDim2.new(1.3, 0, 0, 0)
     frame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     frame.BorderSizePixel = 0
-    frame.ClipsDescendants = true
-    frame.Parent = container
+    frame.Parent = placeholder
     
     local mainCorner = Instance.new("UICorner")
     mainCorner.CornerRadius = UDim.new(0, 10)
@@ -75,181 +117,360 @@ function Notify.New(type, title, text, duration)
     gradient.Rotation = 90
     gradient.Parent = frame
 
-    local inner = Instance.new("Frame")
-    inner.Size = UDim2.new(1, 0, 1, 0)
-    inner.BackgroundTransparency = 1
-    inner.Parent = frame
-
-    -- Заголовок
+    -- Заголовок (SourceSansBold)
     local titleLbl = Instance.new("TextLabel")
     titleLbl.Size = UDim2.new(1, -45, 0, 18)
-    titleLbl.Position = UDim2.new(0, 25, 0, 10)
-    titleLbl.Text = title:upper()
+    titleLbl.Position = UDim2.new(0, 25, 0, 12)
+    titleLbl.Text = tostring(title):upper()
     titleLbl.TextColor3 = accentColor
-    titleLbl.Font = Enum.Font.GothamBold
-    titleLbl.TextSize = 12
+    titleLbl.Font = FONTS.Title
+    titleLbl.TextSize = 13
     titleLbl.TextXAlignment = Enum.TextXAlignment.Left
     titleLbl.BackgroundTransparency = 1
-    titleLbl.Parent = inner
+    titleLbl.Parent = frame
 
-    -- Полоска-разделитель (Таймер)
-    local barContainer = Instance.new("Frame")
-    barContainer.Size = UDim2.new(1, -45, 0, 2)
-    barContainer.Position = UDim2.new(0, 25, 0, 32)
-    barContainer.BackgroundColor3 = accentColor
-    barContainer.BackgroundTransparency = 0.85
-    barContainer.BorderSizePixel = 0
-    barContainer.ClipsDescendants = true
-    barContainer.Parent = inner
+    -- Тонкий таймер под заголовком
+    local progressInner
+    if hasTimer then
+        local barContainer = Instance.new("Frame")
+        barContainer.Size = UDim2.new(1, -45, 0, 2)
+        barContainer.Position = UDim2.new(0, 25, 0, 34)
+        barContainer.BackgroundColor3 = accentColor
+        barContainer.BackgroundTransparency = 0.85
+        barContainer.BorderSizePixel = 0
+        barContainer.ClipsDescendants = true
+        barContainer.Parent = frame
 
-    local barCorner = Instance.new("UICorner")
-    barCorner.CornerRadius = UDim.new(1, 0)
-    barCorner.Parent = barContainer
+        local barCorner = Instance.new("UICorner")
+        barCorner.CornerRadius = UDim.new(1, 0)
+        barCorner.Parent = barContainer
 
-    local progressInner = Instance.new("Frame")
-    progressInner.Size = UDim2.new(1, 0, 1, 0)
-    progressInner.BackgroundColor3 = accentColor
-    progressInner.BorderSizePixel = 0
-    progressInner.Parent = barContainer
+        progressInner = Instance.new("Frame")
+        progressInner.Size = UDim2.new(1, 0, 1, 0)
+        progressInner.BackgroundColor3 = accentColor
+        progressInner.BorderSizePixel = 0
+        progressInner.Parent = barContainer
 
-    local innerCorner = Instance.new("UICorner")
-    innerCorner.CornerRadius = UDim.new(1, 0)
-    innerCorner.Parent = progressInner
+        local innerCorner = Instance.new("UICorner")
+        innerCorner.CornerRadius = UDim.new(1, 0)
+        innerCorner.Parent = progressInner
+    end
+
+    -- Расчет высоты
+    local availableWidth = NOTIFY_WIDTH - 45
+    local descHeight = game:GetService("TextService"):GetTextSize(text, 14, FONTS.Desc, Vector2.new(availableWidth, 1000)).Y
+    
+    local textYOffset = hasTimer and 46 or 40
+    
+    local finalHeight
+    if hasCallback then
+        finalHeight = math.max(descHeight + textYOffset + 38, 106)
+    else
+        finalHeight = math.max(descHeight + textYOffset + 18, 84)
+    end
 
     -- Описание
     local descLbl = Instance.new("TextLabel")
-    descLbl.Size = UDim2.new(1, -45, 0, 0)
-    descLbl.Position = UDim2.new(0, 25, 0, 44)
+    descLbl.Size = UDim2.new(1, -45, 0, descHeight)
+    descLbl.Position = UDim2.new(0, 25, 0, textYOffset)
     descLbl.Text = text
     descLbl.TextColor3 = COLORS.Text_Desc
-    descLbl.Font = Enum.Font.Gotham
+    descLbl.Font = FONTS.Desc
     descLbl.TextSize = 14
     descLbl.TextWrapped = true
     descLbl.TextXAlignment = Enum.TextXAlignment.Left
     descLbl.TextYAlignment = Enum.TextYAlignment.Top
-    descLbl.LineHeight = 1.1
+    descLbl.LineHeight = 1.15
     descLbl.BackgroundTransparency = 1
-    descLbl.Parent = inner
+    descLbl.Parent = frame
 
-    -- Акцентная линия слева
+    -- Левая декоративная линия
     local accentLine = Instance.new("Frame")
     accentLine.Size = UDim2.new(0, 3, 1, -20)
     accentLine.Position = UDim2.new(0, 12, 0, 10)
     accentLine.BackgroundColor3 = accentColor
     accentLine.BorderSizePixel = 0
-    accentLine.Parent = inner
+    accentLine.Parent = frame
     
     local lineCorner = Instance.new("UICorner")
     lineCorner.CornerRadius = UDim.new(1, 0)
     lineCorner.Parent = accentLine
 
-    -- Анимации
-    local descHeight = descLbl.TextBounds.Y
-    local finalHeight = math.max(descHeight + 60, 80)
-
-    frame.Position = UDim2.new(1.3, 0, 0, 0)
-    
-    TweenService:Create(frame, TweenInfo.new(0.6, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-        Position = UDim2.new(0, 0, 0, 0),
-        Size = UDim2.new(1, 0, 0, finalHeight)
-    }):Play()
-
-    TweenService:Create(progressInner, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
-        Size = UDim2.new(0, 0, 1, 0)
-    }):Play()
-
-    task.delay(duration, function()
-        local out = TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {
-            Position = UDim2.new(1.3, 0, 0, 0),
+    -- Функция плавного улетания вправо
+    local function closeNotification()
+        local slideOut = TweenService:Create(frame, TweenInfo.new(0.4, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {
+            Position = UDim2.new(1.3, 0, 0, 0)
+        })
+        slideOut:Play()
+        slideOut.Completed:Wait()
+        
+        local collapse = TweenService:Create(placeholder, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             Size = UDim2.new(1, 0, 0, 0)
         })
-        out:Play()
-        out.Completed:Wait()
-        frame:Destroy()
-    end)
+        collapse:Play()
+        collapse.Completed:Wait()
+        
+        placeholder:Destroy()
+    end
+
+    -- Кнопка действия (SourceSansSemibold)
+    local btnConnection
+    if hasCallback then
+        local textService = game:GetService("TextService")
+        local btnTextWidth = textService:GetTextSize(tostring(buttonText):upper(), 12, FONTS.Button, Vector2.new(200, 50)).X
+        local btnWidth = math.round(math.clamp(btnTextWidth + 24, 80, 140))
+
+        local actionBtn = Instance.new("TextButton")
+        actionBtn.Size = UDim2.new(0, btnWidth, 0, 24)
+        actionBtn.Position = UDim2.new(1, -20, 1, -12)
+        actionBtn.AnchorPoint = Vector2.new(1, 1)
+        actionBtn.BackgroundColor3 = accentColor
+        actionBtn.BackgroundTransparency = 0.93
+        actionBtn.Text = tostring(buttonText):upper()
+        actionBtn.TextColor3 = accentColor
+        actionBtn.Font = FONTS.Button
+        actionBtn.TextSize = 12
+        actionBtn.AutoButtonColor = false
+        actionBtn.Parent = frame
+
+        local btnCorner = Instance.new("UICorner")
+        btnCorner.CornerRadius = UDim.new(0, 5)
+        btnCorner.Parent = actionBtn
+
+        local btnStroke = Instance.new("UIStroke")
+        btnStroke.Color = accentColor
+        btnStroke.Thickness = 1
+        btnStroke.Transparency = 0.75
+        btnStroke.Parent = actionBtn
+
+        actionBtn.MouseEnter:Connect(function()
+            TweenService:Create(actionBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.8}):Play()
+            TweenService:Create(btnStroke, TweenInfo.new(0.15), {Transparency = 0.4}):Play()
+        end)
+        actionBtn.MouseLeave:Connect(function()
+            TweenService:Create(actionBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.93}):Play()
+            TweenService:Create(btnStroke, TweenInfo.new(0.15), {Transparency = 0.75}):Play()
+        end)
+
+        btnConnection = actionBtn.MouseButton1Click:Connect(function()
+            if btnConnection then btnConnection:Disconnect() end
+            if typeof(callback) == "function" then
+                task.spawn(callback)
+            end
+            closeNotification()
+        end)
+    end
+
+    -- Появление карточки
+    placeholder.Size = UDim2.new(1, 0, 0, finalHeight)
+    
+    TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+        Position = UDim2.new(0, 0, 0, 0)
+    }):Play()
+
+    -- Логика таймера
+    if hasTimer and progressInner then
+        local progressTween = TweenService:Create(progressInner, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
+            Size = UDim2.new(0, 0, 1, 0)
+        })
+        progressTween:Play()
+
+        local timerDelay
+        timerDelay = progressTween.Completed:Connect(function()
+            if timerDelay then timerDelay:Disconnect() end
+            if btnConnection then btnConnection:Disconnect() end
+            closeNotification()
+        end)
+    end
 end
 
 -- [[ ВЕРСИЯ 2: КОМПАКТНОЕ (МИНИ) УВЕДОМЛЕНИЕ ]]
-function Notify.Mini(type, text, duration)
-    duration = duration or 3
-    local accentColor = COLORS[type] or COLORS.Success
+function Notify.Mini(customColorOrPreset, text, duration, callback)
+    local accentColor = resolveColor(customColorOrPreset)
     local container = getContainer()
     
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0, 0, 0, 38)
-    frame.BackgroundColor3 = COLORS.Mini_Background
-    frame.BorderSizePixel = 0
-    frame.ClipsDescendants = true
-    frame.Parent = container
+    local hasTimer = not isInfinite(duration)
+    local hasCallback = typeof(callback) == "function"
     
+    -- Создаем абсолютно прозрачный плейсхолдер для UIListLayout
+    local placeholder = Instance.new("Frame")
+    placeholder.Size = UDim2.new(1, 0, 0, 36)
+    placeholder.BackgroundTransparency = 1
+    placeholder.BorderSizePixel = 0
+    placeholder.Parent = container
+
+    -- Сама плашка
+    local frame = Instance.new(hasCallback and "TextButton" or "Frame")
+    frame.Size = UDim2.new(1, 0, 1, 0)
+    frame.Position = UDim2.new(1.3, 0, 0, 0) -- Появление справа
+    frame.BackgroundColor3 = COLORS.Mini_Background
+    frame.BackgroundTransparency = 0.15
+    frame.BorderSizePixel = 0
+    frame.Parent = placeholder
+    
+    if hasCallback then
+        frame.Text = ""
+        frame.AutoButtonColor = false
+    end
+    
+    -- Закругление углов напрямую на основном фрейме
     local mainCorner = Instance.new("UICorner")
     mainCorner.CornerRadius = UDim.new(0, 8)
     mainCorner.Parent = frame
     
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = accentColor
-    stroke.Thickness = 1
-    stroke.Transparency = 0.7
-    stroke.Parent = frame
+    -- [[ УДАЛЕНО: UIStroke полностью убран из Notify.Mini для однотипности ]]
+    -- [ Раньше здесь создавалась обводка ]
 
-    local inner = Instance.new("Frame")
-    inner.Size = UDim2.new(1, 0, 1, 0)
-    inner.BackgroundTransparency = 1
-    inner.Parent = frame
-
+    -- Вертикальный левый маркер-индикатор
     local indicator = Instance.new("Frame")
-    indicator.Size = UDim2.new(0, 4, 0, 16)
-    indicator.Position = UDim2.new(0, 10, 0.5, 0)
+    indicator.Size = UDim2.new(0, 3, 0, 16)
+    indicator.Position = UDim2.new(0, 12, 0.5, 0)
     indicator.AnchorPoint = Vector2.new(0, 0.5)
     indicator.BackgroundColor3 = accentColor
     indicator.BorderSizePixel = 0
-    indicator.Parent = inner
+    indicator.Parent = frame
     
     local indCorner = Instance.new("UICorner")
     indCorner.CornerRadius = UDim.new(1, 0)
     indCorner.Parent = indicator
 
+    -- Текст мини-сообщения
     local msgLbl = Instance.new("TextLabel")
-    msgLbl.Size = UDim2.new(1, -35, 1, 0)
-    msgLbl.Position = UDim2.new(0, 24, 0, 0)
+    msgLbl.Size = UDim2.new(1, -36, 1, hasTimer and -12 or 0)
+    msgLbl.Position = UDim2.new(0, 24, 0, hasTimer and 3 or 0)
     msgLbl.Text = text
-    msgLbl.TextColor3 = Color3.fromRGB(240, 240, 240)
-    msgLbl.Font = Enum.Font.GothamMedium
-    msgLbl.TextSize = 13
+    msgLbl.TextColor3 = Color3.fromRGB(245, 245, 245)
+    msgLbl.Font = FONTS.Mini
+    msgLbl.TextSize = 14
     msgLbl.TextXAlignment = Enum.TextXAlignment.Left
     msgLbl.BackgroundTransparency = 1
-    msgLbl.Parent = inner
+    msgLbl.Parent = frame
 
-    local progressInner = Instance.new("Frame")
-    progressInner.Size = UDim2.new(1, -10, 0, 2)
-    progressInner.Position = UDim2.new(0, 10, 1, -2)
-    progressInner.BackgroundColor3 = accentColor
-    progressInner.BorderSizePixel = 0
-    progressInner.Parent = frame
+    -- Полоска таймера
+    local progressInner
+    if hasTimer then
+        local progressContainer = Instance.new("Frame")
+        progressContainer.Size = UDim2.new(1, -32, 0, 1)
+        progressContainer.Position = UDim2.new(0, 16, 1, -5)
+        progressContainer.BackgroundColor3 = accentColor
+        progressContainer.BackgroundTransparency = 0.92
+        progressContainer.BorderSizePixel = 0
+        progressContainer.ClipsDescendants = true
+        progressContainer.Parent = frame
 
-    local textWidth = msgLbl.TextBounds.X + 45
-    local finalWidth = math.clamp(textWidth, 120, 300)
-
-    frame.Position = UDim2.new(1.3, 0, 0, 0)
-    
-    TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-        Position = UDim2.new(0, 0, 0, 0),
-        Size = UDim2.new(0, finalWidth, 0, 38)
-    }):Play()
-
-    TweenService:Create(progressInner, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
-        Size = UDim2.new(0, 0, 0, 2)
-    }):Play()
-
-    task.delay(duration, function()
-        local out = TweenService:Create(frame, TweenInfo.new(0.4, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {
-            Position = UDim2.new(1.3, 0, 0, 0),
-            BackgroundTransparency = 1
+        progressInner = Instance.new("Frame")
+        progressInner.Size = UDim2.new(1, 0, 1, 0)
+        progressInner.AnchorPoint = Vector2.new(0, 0)
+        progressInner.Position = UDim2.new(0, 0, 0, 0)
+        progressInner.BackgroundColor3 = accentColor
+        progressInner.BorderSizePixel = 0
+        progressInner.Parent = progressContainer
+        
+        local timerGradient = Instance.new("UIGradient")
+        timerGradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(255,255,255)),
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255,255,255)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(255,255,255))
         })
-        out:Play()
-        out.Completed:Wait()
-        frame:Destroy()
+        timerGradient.Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0.3),
+            NumberSequenceKeypoint.new(0.5, 0),
+            NumberSequenceKeypoint.new(1, 0.3)
+        })
+        timerGradient.Parent = progressInner
+    end
+
+    local textWidth = msgLbl.TextBounds.X + 42
+    local finalWidth = math.round(math.clamp(textWidth, 110, 320))
+
+    -- Применяем финальную ширину
+    placeholder.Size = UDim2.new(0, finalWidth, 0, 36)
+    frame.Size = UDim2.new(1, 0, 1, 0)
+
+    -- Функция улетания мини-уведомления вправо
+    local isDestroyed = false
+    local function closeMini()
+        if isDestroyed then return end
+        isDestroyed = true
+        
+        local slideOut = TweenService:Create(frame, TweenInfo.new(0.35, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {
+            Position = UDim2.new(1.3, 0, 0, 0),
+            BackgroundTransparency = 0.5
+        })
+        slideOut:Play()
+        slideOut.Completed:Wait()
+        
+        local collapse = TweenService:Create(placeholder, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, finalWidth, 0, 0)
+        })
+        collapse:Play()
+        collapse.Completed:Wait()
+        
+        placeholder:Destroy()
+    end
+
+    -- Настройка событий при наведении
+    local mouseEnterConnection
+    local mouseLeaveConnection
+    local clickConnection
+
+    -- Защита от случайного закрытия (1 секунда)
+    local canCloseWithMouse = false
+    task.delay(1, function()
+        canCloseWithMouse = true
     end)
+
+    if hasCallback then
+        -- [ ИСПРАВЛЕНО: Теперь наведение только подсвечивает фон, без обводки ]
+        mouseEnterConnection = frame.MouseEnter:Connect(function()
+            TweenService:Create(frame, TweenInfo.new(0.15), {BackgroundTransparency = 0.05}):Play()
+        end)
+        
+        mouseLeaveConnection = frame.MouseLeave:Connect(function()
+            TweenService:Create(frame, TweenInfo.new(0.15), {BackgroundTransparency = 0.15}):Play()
+        end)
+
+        clickConnection = frame.MouseButton1Click:Connect(function()
+            if not canCloseWithMouse then return end
+            
+            if mouseEnterConnection then mouseEnterConnection:Disconnect() end
+            if mouseLeaveConnection then mouseLeaveConnection:Disconnect() end
+            if clickConnection then clickConnection:Disconnect() end
+            
+            task.spawn(callback)
+            closeMini()
+        end)
+	elseif not hasTimer then
+        mouseEnterConnection = frame.MouseEnter:Connect(function()
+            if not canCloseWithMouse then
+                while not canCloseWithMouse do
+                    task.wait(0.1)
+                end
+            end
+            
+            if mouseEnterConnection then mouseEnterConnection:Disconnect() end
+            closeMini()
+        end)
+    end
+
+    -- Анимация появления
+    TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+        Position = UDim2.new(0, 0, 0, 0)
+    }):Play()
+
+    -- Если у уведомления есть таймер
+    if hasTimer and progressInner then
+        local progressTween = TweenService:Create(progressInner, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
+            Size = UDim2.new(0, 0, 1, 0)
+        })
+        progressTween:Play()
+        progressTween.Completed:Connect(function()
+            if mouseEnterConnection then mouseEnterConnection:Disconnect() end
+            if mouseLeaveConnection then mouseLeaveConnection:Disconnect() end
+            if clickConnection then clickConnection:Disconnect() end
+            closeMini()
+        end)
+    end
 end
 
 return Notify

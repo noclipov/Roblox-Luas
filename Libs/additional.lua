@@ -116,11 +116,11 @@ Library.chat_filter = function(condition)
 	ChatService.TextChannels.RBXGeneral.ShouldDeliverCallback = condition
 end
 Library.ss = function()
-    msg.Mini("Success", "Simple Spy: Loading", 2)
+    msg.Mini("Purple", "Simple Spy: Loading", 2)
     loadstring(game:HttpGetAsync("https://raw.githubusercontent.com/78n/SimpleSpy/main/SimpleSpySource.lua"))()
 end
 Library.dd = function()
-    msg.Mini("Success", "Dark Dex: Loading", 2)
+    msg.Mini("Purple", "Dark Dex: Loading", 5)
     loadstring(game:HttpGet("https://github.com/AZYsGithub/DexPlusPlus/releases/latest/download/out.lua"))()
 end
 Library.aa = function()
