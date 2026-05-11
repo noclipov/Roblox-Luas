@@ -1,3 +1,4 @@
+local msg = loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Libs/notify.lua"))()
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -85,7 +86,7 @@ function WebSocketManager:_startIdleTracker()
 			
 			local elapsed = os.time() - self.lastActivityTime
 			if elapsed >= self.idleTimeout then
-				warn("[WS] Соединение простаивает более " .. self.idleTimeout .. " сек. Переход в спящий режим...")
+				msg.New("Coral", "WebSocketManager", "Соединение простаивает более " .. self.idleTimeout .. " сек. Переход в спящий режим...", 5)
 				self.isIdleClosed = true
 				self:_shutdownSocket()
 				break
@@ -130,7 +131,7 @@ function WebSocketManager:_connect()
 		self.isConnected = true
 		self.isIdleClosed = false
 		self.lastActivityTime = os.time()
-		print("[WS] Соединение успешно установлено!")
+		msg.New("Mint", "WebSocketManager", "Соединение успешно установлено!", 5)
 		
 		self:_startIdleTracker()
 		
@@ -185,7 +186,7 @@ function WebSocketManager:_handleDisconnect()
 		return
 	end
 	
-	warn("[WS] Соединение потеряно! Автореконнект через 5 секунд...")
+	msg.New("Coral", "WebSocketManager", "Соединение потеряно! Автореконнект через 5 секунд...", 5)
 	task.wait(5)
 	if not self.isManuallyClosed and not self.isIdleClosed then
 		self:_connect()
