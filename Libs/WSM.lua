@@ -1,6 +1,7 @@
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local TeleportService = game:GetService("TeleportService") -- Добавили сервис телепортации
 
 local WebSocketManager = {}
 WebSocketManager.__index = WebSocketManager
@@ -49,8 +50,48 @@ function WebSocketManager.new(url: string, idleTimeout: number?)
 	self.isIdleClosed = false -- Флаг "спящего" режима
 	
 	self.queue = {}
+	self._cleanupConnections = {} -- Хранилище для системных подключений
+	
+	-- Инициализация системных слушателей для автозакрытия
+	self:_setupLeaveAndTeleportListeners()
 	
 	return self
+end
+
+-- Настройка автоматического закрытия при выходе или телепортации
+function WebSocketManager:_setupLeaveAndTeleportListeners()
+	-- 1. Если игрок телепортируется (для Клиента)
+	if RunService:IsClient() then
+		local lp = Players.LocalPlayer
+		if lp then
+			-- Отслеживаем попытку телепортации
+			local teleportConn = TeleportService.LocalPlayerTeleportAttempt:Connect(function(teleportState)
+				-- Закрываем сокет при старте или в процессе телепортации
+				if teleportState == Enum.TeleportState.Started or teleportState == Enum.TeleportState.InProgress then
+					warn("[WS] Обнаружена телепортация! Закрытие соединения...")
+					self:Close()
+				end
+			end)
+			table.insert(self._cleanupConnections, teleportConn)
+		end
+	end
+
+	-- 2. Если игрок отключается от сервера
+	local leaveConn = Players.PlayerRemoving:Connect(function(player)
+		local isTarget = false
+		if RunService:IsClient() then
+			isTarget = (player == Players.LocalPlayer)
+		else
+			-- На сервере закрываем сокет, если вышел единственный/последний игрок
+			isTarget = (#Players:GetPlayers() <= 1)
+		end
+
+		if isTarget then
+			warn("[WS] Игрок покидает игру. Закрытие соединения...")
+			self:Close()
+		end
+	end)
+	table.insert(self._cleanupConnections, leaveConn)
 end
 
 -- Внутренний поток мониторинга активности (таймаут)
@@ -177,6 +218,14 @@ function WebSocketManager:Close()
 	self.isConnecting = false
 	self.isConnected = false
 	self.isIdleClosed = false
+	
+	-- Отключаем все внутренние события слежения за выходом/телепортом
+	for _, conn in ipairs(self._cleanupConnections) do
+		if conn then
+			pcall(function() conn:Disconnect() end)
+		end
+	end
+	table.clear(self._cleanupConnections)
 	
 	table.clear(self.queue)
 	self:_shutdownSocket()
