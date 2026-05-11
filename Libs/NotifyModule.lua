@@ -22,8 +22,8 @@ local FONTS = {
 }
 
 local COLORS = {
-    Background_Top = Color3.fromRGB(30, 30, 40),
-    Background_Bottom = Color3.fromRGB(20, 20, 25),
+    Background_Default = Color3.fromRGB(25, 25, 33), -- Базовый цвет карточки
+    Background_Hover = Color3.fromRGB(35, 35, 48),   -- Цвет при наведении
     Mini_Background = Color3.fromRGB(20, 20, 26),
     Text_Title = Color3.fromRGB(255, 255, 255),
     Text_Desc = Color3.fromRGB(215, 215, 225),
@@ -101,11 +101,11 @@ function Notify.New(customColorOrPreset, title, text, duration, callback, button
     placeholder.BorderSizePixel = 0
     placeholder.Parent = container
 
-    -- Если карточка полностью кликабельна, создаем ее как TextButton
+    -- Если карточка кликабельна целиком, создаем ее как TextButton, иначе как Frame
     local frame = Instance.new(isCardClickable and "TextButton" or "Frame")
     frame.Size = UDim2.new(1, 0, 1, 0)
     frame.Position = UDim2.new(1.3, 0, 0, 0)
-    frame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    frame.BackgroundTransparency = 1 -- Сам фрейм прозрачный, фон будет внутри
     frame.BorderSizePixel = 0
     frame.Parent = placeholder
     
@@ -113,18 +113,27 @@ function Notify.New(customColorOrPreset, title, text, duration, callback, button
         frame.Text = ""
         frame.AutoButtonColor = false
     end
+
+    -- Фоновый фрейм (его Color3 мы сможем легко твинить!)
+    local bgFrame = Instance.new("Frame")
+    bgFrame.Size = UDim2.new(1, 0, 1, 0)
+    bgFrame.BackgroundColor3 = COLORS.Background_Default
+    bgFrame.BorderSizePixel = 0
+    bgFrame.ZIndex = 1
+    bgFrame.Parent = frame
     
     local mainCorner = Instance.new("UICorner")
     mainCorner.CornerRadius = UDim.new(0, 10)
-    mainCorner.Parent = frame
+    mainCorner.Parent = bgFrame
     
+    -- Накладываем полупрозрачный градиент поверх сплошного цвета для объема
     local gradient = Instance.new("UIGradient")
     gradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, COLORS.Background_Top),
-        ColorSequenceKeypoint.new(1, COLORS.Background_Bottom)
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)), -- Сверху чуть светлее
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(180, 180, 180))  -- Снизу чуть темнее
     })
     gradient.Rotation = 90
-    gradient.Parent = frame
+    gradient.Parent = bgFrame
 
     local titleLbl = Instance.new("TextLabel")
     titleLbl.Size = UDim2.new(1, -45, 0, 18)
@@ -135,6 +144,7 @@ function Notify.New(customColorOrPreset, title, text, duration, callback, button
     titleLbl.TextSize = 13
     titleLbl.TextXAlignment = Enum.TextXAlignment.Left
     titleLbl.BackgroundTransparency = 1
+    titleLbl.ZIndex = 2
     titleLbl.Parent = frame
 
     -- Тонкий таймер под заголовком
@@ -147,6 +157,7 @@ function Notify.New(customColorOrPreset, title, text, duration, callback, button
         barContainer.BackgroundTransparency = 0.85
         barContainer.BorderSizePixel = 0
         barContainer.ClipsDescendants = true
+        barContainer.ZIndex = 2
         barContainer.Parent = frame
 
         local barCorner = Instance.new("UICorner")
@@ -198,6 +209,7 @@ function Notify.New(customColorOrPreset, title, text, duration, callback, button
     descLbl.TextYAlignment = Enum.TextYAlignment.Top
     descLbl.LineHeight = 1.15
     descLbl.BackgroundTransparency = 1
+    descLbl.ZIndex = 2
     descLbl.Parent = frame
 
     local accentLine = Instance.new("Frame")
@@ -205,6 +217,7 @@ function Notify.New(customColorOrPreset, title, text, duration, callback, button
     accentLine.Position = UDim2.new(0, 12, 0, 10)
     accentLine.BackgroundColor3 = accentColor
     accentLine.BorderSizePixel = 0
+    accentLine.ZIndex = 2
     accentLine.Parent = frame
     
     local lineCorner = Instance.new("UICorner")
@@ -212,6 +225,7 @@ function Notify.New(customColorOrPreset, title, text, duration, callback, button
     lineCorner.Parent = accentLine
 
     local function closeNotification()
+        -- Плавное исчезновение при закрытии
         local slideOut = TweenService:Create(frame, TweenInfo.new(0.4, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {
             Position = UDim2.new(1.3, 0, 0, 0)
         })
@@ -231,13 +245,13 @@ function Notify.New(customColorOrPreset, title, text, duration, callback, button
     local mouseEnterConnection
     local mouseLeaveConnection
 
-    -- Защита от случайного мисклика (0.5 сек на прочтение перед возможностью закрыть)
+    -- Защита от мисклика (0.5 сек)
     local canClick = false
     task.delay(0.5, function()
         canClick = true
     end)
 
-    -- Если есть физическая кнопка действия
+    -- Вариант 1: Обычная кнопка внизу карточки
     if hasPhysicalButton then
         local btnTextWidth = game:GetService("TextService"):GetTextSize(tostring(buttonText):upper(), 12, FONTS.Button, Vector2.new(200, 50)).X
         local btnWidth = math.round(math.clamp(btnTextWidth + 24, 80, 140))
@@ -253,6 +267,7 @@ function Notify.New(customColorOrPreset, title, text, duration, callback, button
         actionBtn.Font = FONTS.Button
         actionBtn.TextSize = 12
         actionBtn.AutoButtonColor = false
+        actionBtn.ZIndex = 3
         actionBtn.Parent = frame
 
         local btnCorner = Instance.new("UICorner")
@@ -283,24 +298,18 @@ function Notify.New(customColorOrPreset, title, text, duration, callback, button
             closeNotification()
         end)
 
-    -- Если ВСЯ КАРТОЧКА кликабельна целиком
+    -- Вариант 2: Кликабельна вся карточка целиком
     elseif isCardClickable then
-        -- Эффект наведения на всю карточку (светлеет фон)
+        -- Анимируем Color3 фонового фрейма напрямую через TweenService!
         mouseEnterConnection = frame.MouseEnter:Connect(function()
-            TweenService:Create(gradient, TweenInfo.new(0.2), {
-                Color = ColorSequence.new({
-                    ColorSequenceKeypoint.new(0, COLORS.Background_Top:Lerp(Color3.fromRGB(255, 255, 255), 0.08)),
-                    ColorSequenceKeypoint.new(1, COLORS.Background_Bottom:Lerp(Color3.fromRGB(255, 255, 255), 0.08))
-                })
+            TweenService:Create(bgFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                BackgroundColor3 = COLORS.Background_Hover
             }):Play()
         end)
 
         mouseLeaveConnection = frame.MouseLeave:Connect(function()
-            TweenService:Create(gradient, TweenInfo.new(0.2), {
-                Color = ColorSequence.new({
-                    ColorSequenceKeypoint.new(0, COLORS.Background_Top),
-                    ColorSequenceKeypoint.new(1, COLORS.Background_Bottom)
-                })
+            TweenService:Create(bgFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                BackgroundColor3 = COLORS.Background_Default
             }):Play()
         end)
 
@@ -322,7 +331,7 @@ function Notify.New(customColorOrPreset, title, text, duration, callback, button
         Position = UDim2.new(0, 0, 0, 0)
     }):Play()
 
-    -- Плавное аппаратное убывание таймера
+    -- Плавное убывание таймера
     if hasTimer and progressGradient then
         local progressTween = TweenService:Create(progressGradient, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
             Offset = Vector2.new(-1, 0)
