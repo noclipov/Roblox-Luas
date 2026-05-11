@@ -3,18 +3,14 @@ local HttpService = game:GetService("HttpService")
 local WebSocketManager = {}
 WebSocketManager.__index = WebSocketManager
 
--- Конструктор модуля
--- @param host - Базовый хост, например "192.168.1.50:1337" или "tunnel.ngrok-free.app"
 function WebSocketManager.new(host: string)
 	local self = setmetatable({}, WebSocketManager)
 	
-	-- Автоматически определяем протокол и формируем правильный путь к /luau
 	local cleanHost = host:gsub("^https?://", ""):gsub("^wss?://", "")
 	local isSecure = not cleanHost:match("^192%.168%.") and not cleanHost:match("^127%.0%.0%.1") and not cleanHost:match("^localhost")
 	local protocol = isSecure and "wss://" or "ws://"
 	
 	self.url = protocol .. cleanHost
-	-- Если пользователь передал просто хост без пути, добавляем "/luau"
 	if not self.url:match("/luau$") then
 		self.url = self.url:gsub("/+$", "") .. "/luau"
 	end
@@ -22,13 +18,12 @@ function WebSocketManager.new(host: string)
 	self.socket = nil
 	self.isConnected = false
 	self.isConnecting = false
-	self.isManuallyClosed = false -- Флаг ручного закрытия соединения
-	self.queue = {} -- Очередь для отправки данных, если сокет временно отключен
+	self.isManuallyClosed = false
+	self.queue = {}
 	
 	return self
 end
 
--- Внутренний метод для безопасного подключения
 function WebSocketManager:_connect()
 	if self.isConnected or self.isConnecting or self.isManuallyClosed then return end
 	self.isConnecting = true
@@ -36,7 +31,6 @@ function WebSocketManager:_connect()
 	warn("[WS] Попытка подключения к " .. self.url .. "...")
 	
 	local success, ws = pcall(function()
-		-- Поддержка стандартного WebSocket окружения (Lune / Executor-специфичные API)
 		if WebSocket and WebSocket.connect then
 			return WebSocket.connect(self.url)
 		elseif syn and syn.websocket and syn.websocket.connect then
@@ -53,39 +47,47 @@ function WebSocketManager:_connect()
 		self.isConnected = true
 		print("[WS] Соединение успешно установлено!")
 		
-		-- Отправляем все накопившиеся в очереди данные
 		self:_flushQueue()
 		
-		-- Слушаем закрытие соединения
+		-- Безопасная подписка на закрытие соединения
 		if ws.OnClose then
-			ws.OnClose:Connect(function()
-				self:_handleDisconnect()
+			local connected = pcall(function()
+				ws.OnClose:Connect(function()
+					self:_handleDisconnect()
+				end)
 			end)
+			
+			if not connected then
+				pcall(function()
+					ws.OnClose = function()
+						self:_handleDisconnect()
+					end
+				end)
+			end
 		end
 	else
-		-- Если соединение закрыли вручную во время попытки коннекта, реконнект делать не нужно
 		if self.isManuallyClosed then return end
 		
 		warn("[WS] Ошибка подключения. Повторная попытка через 5 секунд...")
 		task.wait(5)
-		self:_connect()
+		-- Проверяем флаг еще раз перед реконнектом
+		if not self.isManuallyClosed then
+			self:_connect()
+		end
 	end
 end
 
--- Публичный метод для запуска сессии
 function WebSocketManager:Start()
-	self.isManuallyClosed = false -- Сбрасываем флаг при (пере)запуске
+	self.isManuallyClosed = false
 	task.spawn(function()
 		self:_connect()
 	end)
 end
 
--- Обработка дисконнекта и авто-реконнект
 function WebSocketManager:_handleDisconnect()
 	self.isConnected = false
 	self.socket = nil
 	
-	-- Если закрыли руками — не спамим попытками переподключения
 	if self.isManuallyClosed then
 		print("[WS] Соединение закрыто пользователем.")
 		return
@@ -93,47 +95,54 @@ function WebSocketManager:_handleDisconnect()
 	
 	warn("[WS] Соединение разорвано!")
 	task.wait(5)
-	self:_connect()
+	if not self.isManuallyClosed then
+		self:_connect()
+	end
 end
 
--- Публичный метод для принудительного закрытия соединения
 function WebSocketManager:Close()
 	self.isManuallyClosed = true
 	self.isConnecting = false
 	self.isConnected = false
 	
-	-- Очищаем очередь, так как соединение больше не актуально
 	table.clear(self.queue)
 	
 	if self.socket then
-		local success, err = pcall(function()
+		pcall(function()
 			self.socket:Close()
 		end)
-		if not success then
-			warn("[WS] Ошибка при вызове метода Close(): " .. tostring(err))
-		end
 		self.socket = nil
 	end
 	
 	print("[WS] Сессия успешно завершена.")
 end
 
--- Отправка сообщений из очереди после переподключения
 function WebSocketManager:_flushQueue()
 	if #self.queue == 0 then return end
 	print("[WS] Отправка сохраненных пакетов из очереди: " .. #self.queue)
+	
+	-- Копируем очередь, чтобы избежать конфликтов при итерации
+	local tempQueue = {}
 	for _, payload in ipairs(self.queue) do
-		if self.isConnected and self.socket then
-			self.socket:Send(payload)
-		end
+		table.insert(tempQueue, payload)
 	end
 	table.clear(self.queue)
+	
+	for _, payload in ipairs(tempQueue) do
+		if self.isConnected and self.socket then
+			local sendSuccess = pcall(function()
+				self.socket:Send(payload)
+			end)
+			if not sendSuccess then
+				-- Если при отправке очереди сокет снова упал, возвращаем пакет назад
+				table.insert(self.queue, payload)
+			end
+		else
+			table.insert(self.queue, payload)
+		end
+	end
 end
 
--- Главный метод отправки данных
--- @param playerName - Имя игрока (обязательно)
--- @param placeId - ID плейса (обязательно)
--- @param extraData - Таблица с любыми дополнительными динамическими данными (опционально)
 function WebSocketManager:SendData(playerName: string, placeId: number | string, extraData: table?)
 	if self.isManuallyClosed then
 		warn("[WS] Попытка отправить данные через закрытый сокет. Используй :Start() для возобновления работы.")
@@ -143,10 +152,9 @@ function WebSocketManager:SendData(playerName: string, placeId: number | string,
 	local packet = {
 		player_name = playerName,
 		place_id = tostring(placeId),
-		time = os.date("%X") -- Системное время в формате HH:MM:SS
+		time = os.date("%X")
 	}
 	
-	-- Подмешиваем дополнительные параметры, если они переданы
 	if extraData and typeof(extraData) == "table" then
 		for key, value in pairs(extraData) do
 			packet[key] = value
@@ -163,11 +171,16 @@ function WebSocketManager:SendData(playerName: string, placeId: number | string,
 	end
 	
 	if self.isConnected and self.socket then
-		-- Если соединение активно — отправляем сразу
-		self.socket:Send(jsonString)
+		local sendSuccess, sendErr = pcall(function()
+			self.socket:Send(jsonString)
+		end)
+		
+		if not sendSuccess then
+			warn("[WS ERROR] Ошибка отправки, сохраняем в очередь: " .. tostring(sendErr))
+			self.isConnected = false
+			table.insert(self.queue, jsonString)
+		end
 	else
-		-- Если сокет упал — сохраняем пакет в память, чтобы отправить при восстановлении сети
-		warn("[WS] Нет сети. Пакет сохранен в очередь.")
 		table.insert(self.queue, jsonString)
 	end
 end
