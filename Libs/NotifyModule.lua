@@ -22,409 +22,466 @@ local FONTS = {
 }
 
 local COLORS = {
-    Background_Top = Color3.fromRGB(20, 24, 33),
-    Background_Bottom = Color3.fromRGB(15, 18, 25),
-    Stroke = Color3.fromRGB(35, 40, 55),
+    Background_Top = Color3.fromRGB(30, 30, 40),
+    Background_Bottom = Color3.fromRGB(20, 20, 25),
+    Mini_Background = Color3.fromRGB(20, 20, 26),
     Text_Title = Color3.fromRGB(255, 255, 255),
-    Text_Desc = Color3.fromRGB(180, 185, 200),
-    Text_Button = Color3.fromRGB(255, 255, 255),
-    Card_Hover_Add = Color3.fromRGB(15, 15, 20) -- Значение для подсветки карточки при наведении
+    Text_Desc = Color3.fromRGB(215, 215, 225),
 }
 
--- Утилита для плавной анимации ухода
-local function fadeOutAndDestroy(frame, uiStroke, duration)
-    local tweenInfo = TweenInfo.new(duration or 0.4, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
-    
-    -- Анимируем прозрачность всех элементов внутри
-    for _, child in ipairs(frame:GetDescendants()) do
-        if child:IsA("TextLabel") or child:IsA("TextButton") then
-            TweenService:Create(child, tweenInfo, { TextTransparency = 1 }):Play()
-        elseif child:IsA("Frame") and child.Name ~= "TimerLine" then
-            TweenService:Create(child, tweenInfo, { BackgroundTransparency = 1 }):Play()
-        elseif child:IsA("UIStroke") then
-            TweenService:Create(child, tweenInfo, { Transparency = 1 }):Play()
-        elseif child:IsA("UIGradient") and child.Parent.Name == "TimerLine" then
-            -- Линию таймера плавно гасим через прозрачность родителя
-            TweenService:Create(child.Parent, tweenInfo, { BackgroundTransparency = 1 }):Play()
+local NOTIFY_WIDTH = 340
+local NOTIFY_PADDING = 10
+
+-- Функция выбора пресета или кастомного цвета
+local function resolveColor(customColorOrPreset)
+    if typeof(customColorOrPreset) == "Color3" then
+        return customColorOrPreset
+    elseif typeof(customColorOrPreset) == "string" then
+        local presetColor = PRESETS[customColorOrPreset]
+        if presetColor then
+            return presetColor
         end
     end
-    
-    -- Анимируем саму подложку и обводку
-    if uiStroke then
-        TweenService:Create(uiStroke, tweenInfo, { Transparency = 1 }):Play()
-    end
-    
-    local mainTween = TweenService:Create(frame, tweenInfo, {
-        Size = UDim2.new(0, 0, 0, 0),
-        BackgroundTransparency = 1
-    })
-    
-    mainTween.Completed:Connect(function()
-        frame:Destroy()
-    end)
-    
-    mainTween:Play()
+    return PRESETS.Purple
 end
 
--- [[ МЕТОД СОЗДАНИЯ БОЛЬШОГО УВЕДОМЛЕНИЯ ]]
-function Notify.Big(title: string, desc: string, buttonText: string?, presetName: string?, callback: () -> ()?)
+-- Вспомогательная функция для создания контейнера
+local function getContainer()
     local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
+    local sg = playerGui:FindFirstChild("Noclipov_UI_Storage")
     
-    -- Ищем или создаем контейнер
-    local screenGui = playerGui:FindFirstChild("RobloxNotificationGui")
-    if not screenGui then
-        screenGui = Instance.new("ScreenGui")
-        screenGui.Name = "RobloxNotificationGui"
-        screenGui.ResetOnSpawn = false
-        screenGui.DisplayOrder = 100
-        screenGui.Parent = playerGui
-    end
-    
-    local container = screenGui:FindFirstChild("BigNotificationsContainer")
-    if not container then
-        container = Instance.new("Frame")
-        container.Name = "BigNotificationsContainer"
-        container.Size = UDim2.new(0, 320, 1, 0)
-        container.Position = UDim2.new(1, -340, 0, 0) -- Отступ справа
+    if not sg then
+        sg = Instance.new("ScreenGui")
+        sg.Name = "Noclipov_UI_Storage"
+        sg.ResetOnSpawn = false
+        sg.DisplayOrder = 999
+        sg.IgnoreGuiInset = true 
+        sg.Parent = playerGui
+        
+        local container = Instance.new("Frame")
+        container.Name = "NotifyContainer"
+        container.Position = UDim2.new(1, -25, 1, -25)
+        container.Size = UDim2.new(0, NOTIFY_WIDTH, 0, 0)
+        container.AutomaticSize = Enum.AutomaticSize.Y
+        container.AnchorPoint = Vector2.new(1, 1)
         container.BackgroundTransparency = 1
-        container.Parent = screenGui
+        container.BorderSizePixel = 0
+        container.Parent = sg
         
         local layout = Instance.new("UIListLayout")
-        layout.SortOrder = Enum.SortOrder.LayoutOrder
-        layout.Padding = UDim.new(0, 15)
         layout.VerticalAlignment = Enum.VerticalAlignment.Bottom
         layout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+        layout.Padding = UDim.new(0, NOTIFY_PADDING)
         layout.Parent = container
-        
-        local padding = Instance.new("UIPadding")
-        padding.PaddingBottom = UDim.new(0, 20)
-        padding.Parent = container
     end
+    
+    return sg.NotifyContainer
+end
 
-    -- Цвет эффектов по пресету
-    local accentColor = PRESETS[presetName] or PRESETS.Purple
+-- Вспомогательная функция для проверки "бесконечного" времени жизни
+local function isInfinite(duration)
+    return duration == nil or duration == 0 or duration == "inf" or duration == math.huge
+end
+
+-- [[ ВЕРСИЯ 1: ПОЛНОЕ УВЕДОМЛЕНИЕ ]]
+function Notify.New(customColorOrPreset, title, text, duration, callback, buttonText)
+    local accentColor = resolveColor(customColorOrPreset)
+    local container = getContainer()
     
-    -- Главная карточка
-    local frame = Instance.new("Frame")
-    frame.Name = "NotificationFrame"
-    -- Если кнопки нет, высота карточки уменьшается (130 вместо 170)
-    local hasButton = buttonText and buttonText ~= ""
-    local frameHeight = hasButton and 170 or 120
+    local hasTimer = not isInfinite(duration)
+    local hasCallback = typeof(callback) == "function"
     
-    frame.Size = UDim2.new(0, 300, 0, frameHeight)
-    frame.BackgroundColor3 = COLORS.Background_Top
+    -- Определяем, нужна ли физическая кнопка или вся карточка будет кликабельной
+    local hasPhysicalButton = hasCallback and (buttonText ~= nil and buttonText ~= "")
+    local isCardClickable = hasCallback and not hasPhysicalButton
+
+    local placeholder = Instance.new("Frame")
+    placeholder.Size = UDim2.new(1, 0, 0, 0)
+    placeholder.BackgroundTransparency = 1
+    placeholder.BorderSizePixel = 0
+    placeholder.Parent = container
+
+    -- Если карточка полностью кликабельна, создаем ее как TextButton
+    local frame = Instance.new(isCardClickable and "TextButton" or "Frame")
+    frame.Size = UDim2.new(1, 0, 1, 0)
+    frame.Position = UDim2.new(1.3, 0, 0, 0)
+    frame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     frame.BorderSizePixel = 0
-    frame.LayoutOrder = #container:GetChildren()
-    frame.Parent = container
+    frame.Parent = placeholder
     
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 16)
-    corner.Parent = frame
+    if isCardClickable then
+        frame.Text = ""
+        frame.AutoButtonColor = false
+    end
     
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = COLORS.Stroke
-    stroke.Thickness = 1
-    stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    stroke.Parent = frame
-
-    -- Градиент фона (сверху вниз)
-    local bgGradient = Instance.new("UIGradient")
-    bgGradient.Color = ColorSequence.new({
+    local mainCorner = Instance.new("UICorner")
+    mainCorner.CornerRadius = UDim.new(0, 10)
+    mainCorner.Parent = frame
+    
+    local gradient = Instance.new("UIGradient")
+    gradient.Color = ColorSequence.new({
         ColorSequenceKeypoint.new(0, COLORS.Background_Top),
         ColorSequenceKeypoint.new(1, COLORS.Background_Bottom)
     })
-    bgGradient.Rotation = 90
-    bgGradient.Parent = frame
+    gradient.Rotation = 90
+    gradient.Parent = frame
 
-    -- Декоративная светящаяся полоска сверху
-    local topBar = Instance.new("Frame")
-    topBar.Name = "TopGlowingBar"
-    topBar.Size = UDim2.new(1, 0, 0, 4)
-    topBar.Position = UDim2.new(0, 0, 0, 0)
-    topBar.BackgroundColor3 = accentColor
-    topBar.BorderSizePixel = 0
-    topBar.Parent = frame
-    
-    local topBarCorner = Instance.new("UICorner")
-    topBarCorner.CornerRadius = UDim.new(0, 16)
-    topBarCorner.Parent = topBar
-    
-    -- Маскируем нижние углы полоски, чтобы они не вылезали за общие скругления
-    local topBarMask = Instance.new("Frame")
-    topBarMask.Size = UDim2.new(1, 0, 0, 2)
-    topBarMask.Position = UDim2.new(0, 0, 0, 2)
-    topBarMask.BackgroundColor3 = accentColor
-    topBarMask.BorderSizePixel = 0
-    topBarMask.Parent = topBar
+    local titleLbl = Instance.new("TextLabel")
+    titleLbl.Size = UDim2.new(1, -45, 0, 18)
+    titleLbl.Position = UDim2.new(0, 25, 0, 12)
+    titleLbl.Text = tostring(title):upper()
+    titleLbl.TextColor3 = accentColor
+    titleLbl.Font = FONTS.Title
+    titleLbl.TextSize = 13
+    titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+    titleLbl.BackgroundTransparency = 1
+    titleLbl.Parent = frame
 
-    -- Текст заголовка
-    local titleLabel = Instance.new("TextLabel")
-    titleLabel.Size = UDim2.new(1, -30, 0, 25)
-    titleLabel.Position = UDim2.new(0, 15, 0, 15)
-    titleLabel.BackgroundTransparency = 1
-    titleLabel.Font = FONTS.Title
-    titleLabel.Text = title:upper()
-    titleLabel.TextColor3 = COLORS.Text_Title
-    titleLabel.TextSize = 16
-    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-    titleLabel.Parent = frame
+    -- Тонкий таймер под заголовком
+    local progressGradient
+    if hasTimer then
+        local barContainer = Instance.new("Frame")
+        barContainer.Size = UDim2.new(1, -45, 0, 2)
+        barContainer.Position = UDim2.new(0, 25, 0, 34)
+        barContainer.BackgroundColor3 = accentColor
+        barContainer.BackgroundTransparency = 0.85
+        barContainer.BorderSizePixel = 0
+        barContainer.ClipsDescendants = true
+        barContainer.Parent = frame
 
-    -- Текст описания
-    local descLabel = Instance.new("TextLabel")
-    -- Если кнопки нет, описание может занять чуть больше места по высоте
-    local descHeight = hasButton and 65 or 60
-    descLabel.Size = UDim2.new(1, -30, 0, descHeight)
-    descLabel.Position = UDim2.new(0, 15, 0, 40)
-    descLabel.BackgroundTransparency = 1
-    descLabel.Font = FONTS.Desc
-    descLabel.Text = desc
-    descLabel.TextColor3 = COLORS.Text_Desc
-    descLabel.TextSize = 14
-    descLabel.TextWrapped = true
-    descLabel.TextXAlignment = Enum.TextXAlignment.Left
-    descLabel.TextYAlignment = Enum.TextYAlignment.Top
-    descLabel.Parent = frame
+        local barCorner = Instance.new("UICorner")
+        barCorner.CornerRadius = UDim.new(1, 0)
+        barCorner.Parent = barContainer
 
-    -- Переменные для хранения подключений событий мыши
-    local hoverEnterConn, hoverLeaveConn, clickConn
+        local progressInner = Instance.new("Frame")
+        progressInner.Size = UDim2.new(1, 0, 1, 0)
+        progressInner.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        progressInner.BorderSizePixel = 0
+        progressInner.Parent = barContainer
 
-    local function closeBig()
-        if hoverEnterConn then hoverEnterConn:Disconnect() end
-        if hoverLeaveConn then hoverLeaveConn:Disconnect() end
-        if clickConn then clickConn:Disconnect() end
-        fadeOutAndDestroy(frame, stroke, 0.4)
+        local innerCorner = Instance.new("UICorner")
+        innerCorner.CornerRadius = UDim.new(1, 0)
+        innerCorner.Parent = progressInner
+
+        progressGradient = Instance.new("UIGradient")
+        progressGradient.Color = ColorSequence.new(accentColor)
+        progressGradient.Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0),
+            NumberSequenceKeypoint.new(0.999, 0),
+            NumberSequenceKeypoint.new(1, 1)
+        })
+        progressGradient.Offset = Vector2.new(0, 0)
+        progressGradient.Parent = progressInner
     end
 
-    -- [[ ЛОГИКА С КНОПКОЙ ИЛИ ЦЕЛИКОМ КЛИКАБЕЛЬНОЙ КАРТОЧКОЙ ]]
-    if hasButton then
-        -- Создаем обычную кнопку снизу
-        local button = Instance.new("TextButton")
-        button.Size = UDim2.new(1, -30, 0, 36)
-        button.Position = UDim2.new(0, 15, 1, -51)
-        button.BackgroundColor3 = accentColor
-        button.Font = FONTS.Button
-        button.Text = buttonText:upper()
-        button.TextColor3 = COLORS.Text_Button
-        button.TextSize = 13
-        button.AutoButtonColor = false
-        button.Parent = frame
-        
-        local btnCorner = Instance.new("UICorner")
-        btnCorner.CornerRadius = UDim.new(0, 10)
-        btnCorner.Parent = button
-        
-        -- Эффекты наведения на кнопку
-        button.MouseEnter:Connect(function()
-            TweenService:Create(button, TweenInfo.new(0.2), {
-                BackgroundColor3 = accentColor:Lerp(Color3.new(1,1,1), 0.15)
-            }):Play()
-        end)
-        button.MouseLeave:Connect(function()
-            TweenService:Create(button, TweenInfo.new(0.2), {
-                BackgroundColor3 = accentColor
-            }):Play()
-        end)
-        
-        clickConn = button.MouseButton1Click:Connect(function()
-            if callback then task.spawn(callback) end
-            closeBig()
-        end)
+    local availableWidth = NOTIFY_WIDTH - 45
+    local descHeight = game:GetService("TextService"):GetTextSize(text, 14, FONTS.Desc, Vector2.new(availableWidth, 1000)).Y
+    
+    local textYOffset = hasTimer and 46 or 40
+    
+    local finalHeight
+    if hasPhysicalButton then
+        finalHeight = math.max(descHeight + textYOffset + 38, 106)
     else
-        -- КНОПКИ НЕТ: Делаем всю карточку кликабельной кнопкой-невидимкой поверх
-        local overlayButton = Instance.new("TextButton")
-        overlayButton.Name = "ClickOverlay"
-        overlayButton.Size = UDim2.new(1, 0, 1, 0)
-        overlayButton.BackgroundTransparency = 1
-        overlayButton.Text = ""
-        overlayButton.Parent = frame
+        finalHeight = math.max(descHeight + textYOffset + 18, 84)
+    end
+
+    local descLbl = Instance.new("TextLabel")
+    descLbl.Size = UDim2.new(1, -45, 0, descHeight)
+    descLbl.Position = UDim2.new(0, 25, 0, textYOffset)
+    descLbl.Text = text
+    descLbl.TextColor3 = COLORS.Text_Desc
+    descLbl.Font = FONTS.Desc
+    descLbl.TextSize = 14
+    descLbl.TextWrapped = true
+    descLbl.TextXAlignment = Enum.TextXAlignment.Left
+    descLbl.TextYAlignment = Enum.TextYAlignment.Top
+    descLbl.LineHeight = 1.15
+    descLbl.BackgroundTransparency = 1
+    descLbl.Parent = frame
+
+    local accentLine = Instance.new("Frame")
+    accentLine.Size = UDim2.new(0, 3, 1, -20)
+    accentLine.Position = UDim2.new(0, 12, 0, 10)
+    accentLine.BackgroundColor3 = accentColor
+    accentLine.BorderSizePixel = 0
+    accentLine.Parent = frame
+    
+    local lineCorner = Instance.new("UICorner")
+    lineCorner.CornerRadius = UDim.new(1, 0)
+    lineCorner.Parent = accentLine
+
+    local function closeNotification()
+        local slideOut = TweenService:Create(frame, TweenInfo.new(0.4, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {
+            Position = UDim2.new(1.3, 0, 0, 0)
+        })
+        slideOut:Play()
+        slideOut.Completed:Wait()
         
-        -- Эффект наведения (Hover) на всю карточку: плавная подсветка фона и легкое увеличение размера
-        hoverEnterConn = overlayButton.MouseEnter:Connect(function()
-            TweenService:Create(frame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                BackgroundColor3 = COLORS.Background_Top:Lerp(COLORS.Card_Hover_Add, 0.5),
-                Size = UDim2.new(0, 306, 0, frameHeight + 4) -- Легкое увеличение
-            }):Play()
-            TweenService:Create(stroke, TweenInfo.new(0.25), {
-                Color = accentColor
+        local collapse = TweenService:Create(placeholder, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            Size = UDim2.new(1, 0, 0, 0)
+        })
+        collapse:Play()
+        collapse.Completed:Wait()
+        
+        placeholder:Destroy()
+    end
+
+    local clickConnection
+    local mouseEnterConnection
+    local mouseLeaveConnection
+
+    -- Защита от случайного мисклика (0.5 сек на прочтение перед возможностью закрыть)
+    local canClick = false
+    task.delay(0.5, function()
+        canClick = true
+    end)
+
+    -- Если есть физическая кнопка действия
+    if hasPhysicalButton then
+        local btnTextWidth = game:GetService("TextService"):GetTextSize(tostring(buttonText):upper(), 12, FONTS.Button, Vector2.new(200, 50)).X
+        local btnWidth = math.round(math.clamp(btnTextWidth + 24, 80, 140))
+
+        local actionBtn = Instance.new("TextButton")
+        actionBtn.Size = UDim2.new(0, btnWidth, 0, 24)
+        actionBtn.Position = UDim2.new(1, -20, 1, -12)
+        actionBtn.AnchorPoint = Vector2.new(1, 1)
+        actionBtn.BackgroundColor3 = accentColor
+        actionBtn.BackgroundTransparency = 0.93
+        actionBtn.Text = tostring(buttonText):upper()
+        actionBtn.TextColor3 = accentColor
+        actionBtn.Font = FONTS.Button
+        actionBtn.TextSize = 12
+        actionBtn.AutoButtonColor = false
+        actionBtn.Parent = frame
+
+        local btnCorner = Instance.new("UICorner")
+        btnCorner.CornerRadius = UDim.new(0, 5)
+        btnCorner.Parent = actionBtn
+
+        local btnStroke = Instance.new("UIStroke")
+        btnStroke.Color = accentColor
+        btnStroke.Thickness = 1
+        btnStroke.Transparency = 0.75
+        btnStroke.Parent = actionBtn
+
+        actionBtn.MouseEnter:Connect(function()
+            TweenService:Create(actionBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.8}):Play()
+            TweenService:Create(btnStroke, TweenInfo.new(0.15), {Transparency = 0.4}):Play()
+        end)
+        actionBtn.MouseLeave:Connect(function()
+            TweenService:Create(actionBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.93}):Play()
+            TweenService:Create(btnStroke, TweenInfo.new(0.15), {Transparency = 0.75}):Play()
+        end)
+
+        clickConnection = actionBtn.MouseButton1Click:Connect(function()
+            if not canClick then return end
+            if clickConnection then clickConnection:Disconnect() end
+            if typeof(callback) == "function" then
+                task.spawn(callback)
+            end
+            closeNotification()
+        end)
+
+    -- Если ВСЯ КАРТОЧКА кликабельна целиком
+    elseif isCardClickable then
+        -- Эффект наведения на всю карточку (светлеет фон)
+        mouseEnterConnection = frame.MouseEnter:Connect(function()
+            TweenService:Create(gradient, TweenInfo.new(0.2), {
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, COLORS.Background_Top:Lerp(Color3.fromRGB(255, 255, 255), 0.08)),
+                    ColorSequenceKeypoint.new(1, COLORS.Background_Bottom:Lerp(Color3.fromRGB(255, 255, 255), 0.08))
+                })
             }):Play()
         end)
-        
-        hoverLeaveConn = overlayButton.MouseLeave:Connect(function()
-            TweenService:Create(frame, TweenInfo.new(0.2), {
-                BackgroundColor3 = COLORS.Background_Top,
-                Size = UDim2.new(0, 300, 0, frameHeight) -- Возврат к дефолту
-            }):Play()
-            TweenService:Create(stroke, TweenInfo.new(0.2), {
-                Color = COLORS.Stroke
+
+        mouseLeaveConnection = frame.MouseLeave:Connect(function()
+            TweenService:Create(gradient, TweenInfo.new(0.2), {
+                Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, COLORS.Background_Top),
+                    ColorSequenceKeypoint.new(1, COLORS.Background_Bottom)
+                })
             }):Play()
         end)
-        
-        clickConn = overlayButton.MouseButton1Click:Connect(function()
-            if callback then task.spawn(callback) end
-            closeBig()
+
+        clickConnection = frame.MouseButton1Click:Connect(function()
+            if not canClick then return end
+            
+            if mouseEnterConnection then mouseEnterConnection:Disconnect() end
+            if mouseLeaveConnection then mouseLeaveConnection:Disconnect() end
+            if clickConnection then clickConnection:Disconnect() end
+            
+            task.spawn(callback)
+            closeNotification()
         end)
     end
 
-    -- Анимация появления уведомления (выезд сбоку)
-    frame.Position = UDim2.new(1, 320, 0, 0) -- Старт за экраном справа
+    placeholder.Size = UDim2.new(1, 0, 0, finalHeight)
+    
     TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
         Position = UDim2.new(0, 0, 0, 0)
     }):Play()
+
+    -- Плавное аппаратное убывание таймера
+    if hasTimer and progressGradient then
+        local progressTween = TweenService:Create(progressGradient, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
+            Offset = Vector2.new(-1, 0)
+        })
+        progressTween:Play()
+
+        local timerDelay
+        timerDelay = progressTween.Completed:Connect(function()
+            if timerDelay then timerDelay:Disconnect() end
+            if clickConnection then clickConnection:Disconnect() end
+            if mouseEnterConnection then mouseEnterConnection:Disconnect() end
+            if mouseLeaveConnection then mouseLeaveConnection:Disconnect() end
+            closeNotification()
+        end)
+    end
 end
 
--- [[ МЕТОД СОЗДАНИЯ МИНИ-УВЕДОМЛЕНИЯ ]]
-function Notify.Mini(message: string, duration: number?, presetName: string?, callback: () -> ()?)
-    local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
-    duration = duration or 4.5
+-- [[ ВЕРСИЯ 2: КОМПАКТНОЕ (МИНИ) УВЕДОМЛЕНИЕ ]]
+function Notify.Mini(customColorOrPreset, text, duration, callback)
+    local accentColor = resolveColor(customColorOrPreset)
+    local container = getContainer()
     
-    local screenGui = playerGui:FindFirstChild("RobloxNotificationGui")
-    if not screenGui then
-        screenGui = Instance.new("ScreenGui")
-        screenGui.Name = "RobloxNotificationGui"
-        screenGui.ResetOnSpawn = false
-        screenGui.DisplayOrder = 100
-        screenGui.Parent = playerGui
-    end
+    local hasTimer = not isInfinite(duration)
+    local hasCallback = typeof(callback) == "function"
     
-    local container = screenGui:FindFirstChild("MiniNotificationsContainer")
-    if not container then
-        container = Instance.new("Frame")
-        container.Name = "MiniNotificationsContainer"
-        container.Size = UDim2.new(0, 260, 1, 0)
-        container.Position = UDim2.new(1, -280, 0, 0)
-        container.BackgroundTransparency = 1
-        container.Parent = screenGui
-        
-        local layout = Instance.new("UIListLayout")
-        layout.SortOrder = Enum.SortOrder.LayoutOrder
-        layout.Padding = UDim.new(0, 10)
-        layout.VerticalAlignment = Enum.VerticalAlignment.Bottom
-        layout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-        layout.Parent = container
-        
-        local padding = Instance.new("UIPadding")
-        padding.PaddingBottom = UDim.new(0, 20)
-        padding.Parent = container
-    end
+    local placeholder = Instance.new("Frame")
+    placeholder.Size = UDim2.new(1, 0, 0, 36)
+    placeholder.BackgroundTransparency = 1
+    placeholder.BorderSizePixel = 0
+    placeholder.Parent = container
 
-    local accentColor = PRESETS[presetName] or PRESETS.Purple
-
-    local frame = Instance.new("Frame")
-    frame.Name = "MiniFrame"
-    frame.Size = UDim2.new(0, 240, 0, 48)
-    frame.BackgroundColor3 = COLORS.Background_Top
+    local frame = Instance.new(hasCallback and "TextButton" or "Frame")
+    frame.Size = UDim2.new(1, 0, 1, 0)
+    frame.Position = UDim2.new(1.3, 0, 0, 0)
+    frame.BackgroundColor3 = COLORS.Mini_Background
+    frame.BackgroundTransparency = 0.15
     frame.BorderSizePixel = 0
-    frame.LayoutOrder = #container:GetChildren()
-    frame.Parent = container
+    frame.Parent = placeholder
     
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 12)
-    corner.Parent = frame
+    if hasCallback then
+        frame.Text = ""
+        frame.AutoButtonColor = false
+    end
     
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = COLORS.Stroke
-    stroke.Thickness = 1
-    stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    stroke.Parent = frame
+    local mainCorner = Instance.new("UICorner")
+    mainCorner.CornerRadius = UDim.new(0, 8)
+    mainCorner.Parent = frame
 
-    -- Фоновый градиент с интеграцией таймера во вторую половину
-    local bgGradient = Instance.new("UIGradient")
-    bgGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, COLORS.Background_Top),
-        ColorSequenceKeypoint.new(1, COLORS.Background_Bottom)
-    })
-    bgGradient.Rotation = 90
-    bgGradient.Parent = frame
-
-    -- Текстовое сообщение
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, -30, 1, 0)
-    label.Position = UDim2.new(0, 15, 0, 0)
-    label.BackgroundTransparency = 1
-    label.Font = FONTS.Mini
-    label.Text = message
-    label.TextColor3 = COLORS.Text_Title
-    label.TextSize = 13
-    label.TextWrapped = true
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.Parent = frame
-
-    -- Подложка для линии прогресса, чтобы она не вылезала на скругленные углы
-    local timerContainer = Instance.new("Frame")
-    timerContainer.Name = "TimerContainer"
-    timerContainer.Size = UDim2.new(1, -4, 0, 3)
-    timerContainer.Position = UDim2.new(0, 2, 1, -5)
-    timerContainer.BackgroundTransparency = 1
-    timerContainer.ClipsDescendants = true -- Защита от вылезания на углах
-    timerContainer.Parent = frame
-
-    -- Линия таймера
-    local progressLine = Instance.new("Frame")
-    progressLine.Name = "TimerLine"
-    progressLine.Size = UDim2.new(1, 0, 1, 0)
-    progressLine.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    progressLine.BorderSizePixel = 0
-    progressLine.Parent = timerContainer
+    local indicator = Instance.new("Frame")
+    indicator.Size = UDim2.new(0, 3, 0, 16)
+    indicator.Position = UDim2.new(0, 12, 0.5, 0)
+    indicator.AnchorPoint = Vector2.new(0, 0.5)
+    indicator.BackgroundColor3 = accentColor
+    indicator.BorderSizePixel = 0
+    indicator.Parent = frame
     
-    local progressCorner = Instance.new("UICorner")
-    progressCorner.CornerRadius = UDim.new(0, 8)
-    progressCorner.Parent = progressLine
+    local indCorner = Instance.new("UICorner")
+    indCorner.CornerRadius = UDim.new(1, 0)
+    indCorner.Parent = indicator
 
-    -- Плавный переход от цвета пресета в прозрачность
-    local progressGradient = Instance.new("UIGradient")
-    progressGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, accentColor),
-        ColorSequenceKeypoint.new(1, accentColor)
-    })
-    progressGradient.Transparency = NumberSequence.new({
-        NumberSequenceKeypoint.new(0, 0),
-        NumberSequenceKeypoint.new(1, 1)
-    })
-    progressGradient.Offset = Vector2.new(0, 0)
-    progressGradient.Parent = progressLine
+    local msgLbl = Instance.new("TextLabel")
+    msgLbl.Size = UDim2.new(1, -36, 1, hasTimer and -12 or 0)
+    msgLbl.Position = UDim2.new(0, 24, 0, hasTimer and 3 or 0)
+    msgLbl.Text = text
+    msgLbl.TextColor3 = Color3.fromRGB(245, 245, 245)
+    msgLbl.Font = FONTS.Mini
+    msgLbl.TextSize = 14
+    msgLbl.TextXAlignment = Enum.TextXAlignment.Left
+    msgLbl.BackgroundTransparency = 1
+    msgLbl.Parent = frame
 
-    local mouseEnterConnection, mouseLeaveConnection, clickConnection
+    -- Полоска таймера в мини-сообщении
+    local progressGradient
+    if hasTimer then
+        local progressContainer = Instance.new("Frame")
+        progressContainer.Size = UDim2.new(1, -32, 0, 1)
+        progressContainer.Position = UDim2.new(0, 16, 1, -5)
+        progressContainer.BackgroundColor3 = accentColor
+        progressContainer.BackgroundTransparency = 0.92
+        progressContainer.BorderSizePixel = 0
+        progressContainer.ClipsDescendants = true
+        progressContainer.Parent = frame
+
+        local progressInner = Instance.new("Frame")
+        progressInner.Size = UDim2.new(1, 0, 1, 0)
+        progressInner.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        progressInner.BorderSizePixel = 0
+        progressInner.Parent = progressContainer
+        
+        progressGradient = Instance.new("UIGradient")
+        progressGradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, accentColor),
+            ColorSequenceKeypoint.new(1, accentColor)
+        })
+        progressGradient.Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0),
+            NumberSequenceKeypoint.new(0.999, 0),
+            NumberSequenceKeypoint.new(1, 1)
+        })
+        progressGradient.Offset = Vector2.new(0, 0)
+        progressGradient.Parent = progressInner
+    end
+
+    local textWidth = msgLbl.TextBounds.X + 42
+    local finalWidth = math.round(math.clamp(textWidth, 110, 320))
+
+    placeholder.Size = UDim2.new(0, finalWidth, 0, 36)
+    frame.Size = UDim2.new(1, 0, 1, 0)
+
+    local isDestroyed = false
+    local function closeMini()
+        if isDestroyed then return end
+        isDestroyed = true
+        
+        local slideOut = TweenService:Create(frame, TweenInfo.new(0.35, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {
+            Position = UDim2.new(1.3, 0, 0, 0),
+            BackgroundTransparency = 0.5
+        })
+        slideOut:Play()
+        slideOut.Completed:Wait()
+        
+        local collapse = TweenService:Create(placeholder, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, finalWidth, 0, 0)
+        })
+        collapse:Play()
+        collapse.Completed:Wait()
+        
+        placeholder:Destroy()
+    end
+
+    local mouseEnterConnection
+    local mouseLeaveConnection
+    local clickConnection
+
     local canCloseWithMouse = false
-    local hasTimer = duration > 0
-
-    -- Таймаут блокировки закрытия курсором на первые полсекунды появления
-    task.delay(0.5, function()
+    task.delay(1, function()
         canCloseWithMouse = true
     end)
 
-    local function closeMini()
-        if mouseEnterConnection then mouseEnterConnection:Disconnect() end
-        if mouseLeaveConnection then mouseLeaveConnection:Disconnect() end
-        if clickConnection then clickConnection:Disconnect() end
-        fadeOutAndDestroy(frame, stroke, 0.3)
-    end
-
-    -- Клик-событие, если передан callback
-    if callback then
-        clickConnection = frame.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                if mouseEnterConnection then mouseEnterConnection:Disconnect() end
-                if mouseLeaveConnection then mouseLeaveConnection:Disconnect() end
-                if clickConnection then clickConnection:Disconnect() end
-                
-                task.spawn(callback)
-                closeMini()
-            end
+    if hasCallback then
+        mouseEnterConnection = frame.MouseEnter:Connect(function()
+            TweenService:Create(frame, TweenInfo.new(0.15), {BackgroundTransparency = 0.05}):Play()
         end)
         
-        -- Визуальный отклик на наведение (Hover) для интерактивных мини-сообщений
-        mouseEnterConnection = frame.MouseEnter:Connect(function()
-            TweenService:Create(frame, TweenInfo.new(0.2), {
-                BackgroundColor3 = COLORS.Background_Top:Lerp(COLORS.Card_Hover_Add, 0.5)
-            }):Play()
-        end)
         mouseLeaveConnection = frame.MouseLeave:Connect(function()
-            TweenService:Create(frame, TweenInfo.new(0.2), {
-                BackgroundColor3 = COLORS.Background_Top
-            }):Play()
+            TweenService:Create(frame, TweenInfo.new(0.15), {BackgroundTransparency = 0.15}):Play()
+        end)
+
+        clickConnection = frame.MouseButton1Click:Connect(function()
+            if not canCloseWithMouse then return end
+            
+            if mouseEnterConnection then mouseEnterConnection:Disconnect() end
+            if mouseLeaveConnection then mouseLeaveConnection:Disconnect() end
+            if clickConnection then clickConnection:Disconnect() end
+            
+            task.spawn(callback)
+            closeMini()
         end)
     elseif not hasTimer then
-        -- Если у сообщения нет таймера авто-закрытия — оно закрывается по наведению курсора мыши
         mouseEnterConnection = frame.MouseEnter:Connect(function()
             if not canCloseWithMouse then
                 while not canCloseWithMouse do
@@ -437,8 +494,6 @@ function Notify.Mini(message: string, duration: number?, presetName: string?, ca
         end)
     end
 
-    -- Появление мини-сообщения (выезд сбоку)
-    frame.Position = UDim2.new(1, 280, 0, 0)
     TweenService:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
         Position = UDim2.new(0, 0, 0, 0)
     }):Play()
