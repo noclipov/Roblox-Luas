@@ -52,36 +52,22 @@ function WebSocketManager.new(url: string, idleTimeout: number?)
 	self._cleanupConnections = {} -- Хранилище для системных подключений
 	
 	-- Инициализация системных слушателей для автозакрытия
-	self:_setupLeaveAndTeleportListeners()
+	self:_setupLeaveListeners()
 	
 	return self
 end
 
--- Настройка автоматического закрытия при выходе или телепортации
-function WebSocketManager:_setupLeaveAndTeleportListeners()
-	-- 1. Срабатывает при выходе локального игрока или закрытии сервера/клиента (работает при телепортах)
-	local success, err = pcall(function()
-		game:BindToClose(function()
-			warn("[WS] Игра закрывается или инициирован телепорт! Закрытие соединения...")
-			self:Close()
-		end)
-	end)
-	if not success then
-		warn("[WS] Не удалось привязать BindToClose: " .. tostring(err))
-	end
-
-	-- 2. Если игрок отключается от сервера
+-- Настройка автоматического закрытия при выходе игрока
+function WebSocketManager:_setupLeaveListeners()
+	-- Если игрок отключается от сервера (включая телепортацию в другой плейс)
 	local leaveConn = Players.PlayerRemoving:Connect(function(player)
 		local isTarget = false
 		if RunService:IsClient() then
 			isTarget = (player == Players.LocalPlayer)
-		else
-			-- На сервере закрываем сокет, если вышел единственный/последний игрок
-			isTarget = (#Players:GetPlayers() <= 1)
 		end
 
 		if isTarget then
-			warn("[WS] Игрок покидает игру. Закрытие соединения...")
+			warn("[WS] Локальный игрок покидает игру (или телепортируется). Закрытие соединения...")
 			self:Close()
 		end
 	end)
