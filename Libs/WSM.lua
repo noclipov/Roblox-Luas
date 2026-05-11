@@ -4,14 +4,27 @@ local WebSocketManager = {}
 WebSocketManager.__index = WebSocketManager
 
 -- Конструктор модуля
-function WebSocketManager.new(url: string)
+-- @param host - Базовый хост, например "192.168.1.50:1337" или "tunnel.ngrok-free.app"
+function WebSocketManager.new(host: string)
 	local self = setmetatable({}, WebSocketManager)
-	self.url = url
+	
+	-- Автоматически определяем протокол и формируем правильный путь к /luau
+	local cleanHost = host:gsub("^https?://", ""):gsub("^wss?://", "")
+	local isSecure = not cleanHost:match("^192%.168%.") and not cleanHost:match("^127%.0%.0%.1") and not cleanHost:match("^localhost")
+	local protocol = isSecure and "wss://" or "ws://"
+	
+	self.url = protocol .. cleanHost
+	-- Если пользователь передал просто хост без пути, добавляем "/luau"
+	if not self.url:match("/luau$") then
+		self.url = self.url:gsub("/+$", "") .. "/luau"
+	end
+	
 	self.socket = nil
 	self.isConnected = false
 	self.isConnecting = false
 	self.isManuallyClosed = false -- Флаг ручного закрытия соединения
 	self.queue = {} -- Очередь для отправки данных, если сокет временно отключен
+	
 	return self
 end
 
