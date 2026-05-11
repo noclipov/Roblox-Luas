@@ -131,7 +131,7 @@ function WebSocketManager:_connect()
 		self.isConnected = true
 		self.isIdleClosed = false
 		self.lastActivityTime = os.time()
-		msg.New("Mint", "WebSocketManager", "Соединение успешно установлено!", 5)
+		msg.Mini("Mint", "[WS] Соединение успешно установлено!", 3)
 		
 		self:_startIdleTracker()
 		
