@@ -1,7 +1,7 @@
 local Library = {}
 local TeleportService = game:GetService('TeleportService')
 local ChatService = game:GetService("TextChatService")
-local msg = loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Libs/NotifyModule.lua"))()
+local msg = loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Libs/notify.lua"))()
 local pls = game.Players
 local lp = pls.LocalPlayer
 Library.Link = "https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Libs/additional.lua"
@@ -121,7 +121,7 @@ Library.ss = function()
 end
 Library.dd = function()
     msg.Mini("Purple", "Dark Dex: Loading", 5)
-    loadstring(isfile("noclipov/dex/main.lua") and readfile("noclipov/dex/main.lua") or game:HttpGet("https://github.com/AZYsGithub/DexPlusPlus/releases/latest/download/out.lua"))()
+    loadstring(game:HttpGet("https://github.com/AZYsGithub/DexPlusPlus/releases/latest/download/out.lua"))()
 end
 Library.aa = function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Anti-AFK.lua"))()
