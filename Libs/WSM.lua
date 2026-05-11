@@ -1,7 +1,27 @@
 local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 
 local WebSocketManager = {}
 WebSocketManager.__index = WebSocketManager
+
+-- Вспомогательная функция для безопасного получения имени игрока/сервера
+local function getClientIdentifier()
+	local success, result = pcall(function()
+		if RunService:IsClient() then
+			local lp = Players.LocalPlayer
+			return lp and lp.Name or "Unknown Client"
+		else
+			-- Если скрипт на сервере, берем первого игрока или пишем "Server"
+			local activePlayers = Players:GetPlayers()
+			if #activePlayers > 0 then
+				return activePlayers[1].Name
+			end
+			return "Server"
+		end
+	end)
+	return success and result or "Roblox_Instance"
+end
 
 -- Конструктор модуля
 -- @param url - Полный адрес вебсокета
@@ -24,9 +44,9 @@ function WebSocketManager.new(url: string, idleTimeout: number?)
 	self.isManuallyClosed = false
 	
 	-- Настройки таймаута активности
-	self.idleTimeout = idleTimeout or 30 -- Через сколько секунд закрывать сокет при простое
+	self.idleTimeout = idleTimeout or 30
 	self.lastActivityTime = os.time()
-	self.isIdleClosed = false -- Флаг, что сокет "спит" из-за простоя
+	self.isIdleClosed = false -- Флаг "спящего" режима
 	
 	self.queue = {}
 	
@@ -42,12 +62,11 @@ function WebSocketManager:_startIdleTracker()
 		while self.isConnected and not self.isManuallyClosed do
 			task.wait(1)
 			
-			-- Проверяем, сколько времени прошло с последней отправки
 			local elapsed = os.time() - self.lastActivityTime
 			if elapsed >= self.idleTimeout then
 				warn("[WS] Соединение простаивает более " .. self.idleTimeout .. " сек. Переход в спящий режим...")
 				self.isIdleClosed = true
-				self:_shutdownSocket() -- Мягко закрываем физический сокет
+				self:_shutdownSocket()
 				break
 			end
 		end
@@ -55,7 +74,7 @@ function WebSocketManager:_startIdleTracker()
 	end)
 end
 
--- Внутренний метод физического закрытия сокета без отмены сессии
+-- Внутренний метод физического закрытия сокета
 function WebSocketManager:_shutdownSocket()
 	self.isConnected = false
 	if self.socket then
@@ -89,13 +108,11 @@ function WebSocketManager:_connect()
 		self.socket = ws
 		self.isConnected = true
 		self.isIdleClosed = false
-		self.lastActivityTime = os.time() -- Сбрасываем таймер при коннекте
+		self.lastActivityTime = os.time()
 		print("[WS] Соединение успешно установлено!")
 		
-		-- Запускаем трекер простоя
 		self:_startIdleTracker()
 		
-		-- Фоновая отправка буфера
 		task.spawn(function()
 			self:_flushQueue()
 		end)
@@ -117,7 +134,6 @@ function WebSocketManager:_connect()
 			end
 		end
 	else
-		-- Если закрыли руками или он ушел в сон, реконнект по ошибке не нужен
 		if self.isManuallyClosed or self.isIdleClosed then return end
 		
 		local errorMsg = tostring(ws or "Unknown Error")
@@ -144,7 +160,6 @@ function WebSocketManager:_handleDisconnect()
 	self.isConnected = false
 	self.socket = nil
 	
-	-- Если закрыли руками или сокет уснул сам — автореконнект не вызываем
 	if self.isManuallyClosed or self.isIdleClosed then
 		return
 	end
@@ -156,7 +171,7 @@ function WebSocketManager:_handleDisconnect()
 	end
 end
 
--- Полная принудительная остановка (очищает очередь)
+-- Полная принудительная остановка
 function WebSocketManager:Close()
 	self.isManuallyClosed = true
 	self.isConnecting = false
@@ -196,8 +211,9 @@ function WebSocketManager:_flushQueue()
 	end
 end
 
--- Универсальный метод отправки данных (с автоматическим пробуждением)
-function WebSocketManager:Send(data: any)
+-- Универсальный метод отправки данных (с авто-генерацией базовых полей и авто-пробуждением)
+-- @param customData - Таблица с дополнительными параметрами, строка или число
+function WebSocketManager:Send(customData: any?)
 	if self.isManuallyClosed then
 		warn("[WS] Попытка отправки через закрытый менеджер. Вызовите :Start() для возобновления.")
 		return
@@ -215,23 +231,40 @@ function WebSocketManager:Send(data: any)
 		end)
 	end
 
-	local payload = nil
+	-- 1. Генерируем базовый пакет со стандартными системными данными
+	local packet = {
+		player_name = getClientIdentifier(),
+		place_id = tostring(game.PlaceId),
+		time = os.date("%X") -- Системное время в формате HH:MM:SS
+	}
 
-	if typeof(data) == "table" then
-		local success, jsonString = pcall(function()
-			return HttpService:JSONEncode(data)
-		end)
-		if success then
-			payload = jsonString
+	-- 2. Интегрируем пользовательские данные
+	if customData ~= nil then
+		if typeof(customData) == "table" then
+			-- Подмешиваем кастомные поля в базовый пакет
+			for key, value in pairs(customData) do
+				packet[key] = value
+			end
 		else
-			warn("[WS] Ошибка сериализации таблицы в JSON.")
-			return
+			-- Если передана строка или число, записываем её в специальное поле "message"
+			packet["message"] = tostring(customData)
 		end
+	end
+
+	-- Кодируем весь пакет в JSON-строку
+	local payload = nil
+	local success, jsonString = pcall(function()
+		return HttpService:JSONEncode(packet)
+	end)
+	
+	if success then
+		payload = jsonString
 	else
-		payload = tostring(data)
+		warn("[WS] Ошибка сериализации данных в JSON.")
+		return
 	end
 	
-	-- Отправляем или сохраняем в очередь
+	-- 3. Безопасная отправка или удержание в очереди
 	if self.isConnected and self.socket then
 		local sendSuccess, sendErr = pcall(function()
 			self.socket:Send(payload)
@@ -244,7 +277,6 @@ function WebSocketManager:Send(data: any)
 			task.spawn(function() self:_handleDisconnect() end)
 		end
 	else
-		-- Если сокет спит или подключается, пакет аккуратно подождет в очереди и отправится сразу после коннекта
 		table.insert(self.queue, payload)
 	end
 end
