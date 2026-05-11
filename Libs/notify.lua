@@ -12,13 +12,13 @@ local PRESETS = {
     Teal = Color3.fromRGB(45, 212, 191),  -- Глубокий бирюзовый (цвет морской волны)
     Sage = Color3.fromRGB(163, 230, 53),  -- Нежный фисташковый (шалфейный)
 
-    -- Теплые & Уютные
+    --  & Уютные
     Coral = Color3.fromRGB(248, 113, 113), -- Нежно-коралловый (мягкий красный)
     Honey = Color3.fromRGB(251, 191, 36),  -- Приглушенный янтарно-желтый
     Peach = Color3.fromRGB(251, 146, 60),  -- Мягкий персиковый (теплый оранжевый)
     Rose = Color3.fromRGB(244, 114, 182), -- Пыльно-розовый
 
-    -- Особые & Неоновые (для редких событий)
+    --  & Неоновые (для редких событий)
     Sakura = Color3.fromRGB(253, 164, 186), -- Цвет цветущей сакуры (очень мягкий розовый)
     Electric = Color3.fromRGB(129, 140, 248), -- Индиго (насыщенный сине-фиолетовый)
     Emerald = Color3.fromRGB(52, 211, 153),  -- Изумрудный зелёный
@@ -33,11 +33,11 @@ local FONTS = {
 }
 
 local COLORS = {
-     = Color3.fromRGB(25, 25, 33), -- Базовый цвет карточки
-     = Color3.fromRGB(35, 35, 48),   -- Цвет при наведении
-     = Color3.fromRGB(20, 20, 26),
-     = Color3.fromRGB(255, 255, 255),
-     = Color3.fromRGB(215, 215, 225),
+    Background_Default = Color3.fromRGB(25, 25, 33), -- Базовый цвет карточки
+    Background_Hover = Color3.fromRGB(35, 35, 48),   -- Цвет при наведении
+    Mini_Background = Color3.fromRGB(20, 20, 26),
+    Text_Title = Color3.fromRGB(255, 255, 255),
+    Text_Desc = Color3.fromRGB(215, 215, 225),
 }
 
 local NOTIFY_WIDTH = 340
@@ -177,7 +177,7 @@ function Notify.New(customColorOrPreset, title, text, duration, callback, button
 
         local progressInner = Instance.new("Frame")
         progressInner.Size = UDim2.new(1, 0, 1, 0)
-        progressInner. = Color3.fromRGB(255, 255, 255)
+        progressInner.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
         progressInner.BorderSizePixel = 0
         progressInner.Parent = barContainer
 
@@ -407,7 +407,7 @@ function Notify.Mini(customColorOrPreset, text, duration, callback)
     msgLbl.Size = UDim2.new(1, -36, 1, hasTimer and -12 or 0)
     msgLbl.Position = UDim2.new(0, 24, 0, hasTimer and 3 or 0)
     msgLbl.Text = text
-    msgLbl. = Color3.fromRGB(245, 245, 245)
+    msgLbl.TextColor3 = Color3.fromRGB(245, 245, 245)
     msgLbl.Font = FONTS.Mini
     msgLbl.TextSize = 14
     msgLbl.TextXAlignment = Enum.TextXAlignment.Left
@@ -428,7 +428,7 @@ function Notify.Mini(customColorOrPreset, text, duration, callback)
 
         local progressInner = Instance.new("Frame")
         progressInner.Size = UDim2.new(1, 0, 1, 0)
-        progressInner. = Color3.fromRGB(255, 255, 255)
+        progressInner.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
         progressInner.BorderSizePixel = 0
         progressInner.Parent = progressContainer
         
