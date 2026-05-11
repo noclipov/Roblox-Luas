@@ -1,7 +1,6 @@
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local TeleportService = game:GetService("TeleportService") -- Добавили сервис телепортации
 
 local WebSocketManager = {}
 WebSocketManager.__index = WebSocketManager
@@ -60,20 +59,15 @@ end
 
 -- Настройка автоматического закрытия при выходе или телепортации
 function WebSocketManager:_setupLeaveAndTeleportListeners()
-	-- 1. Если игрок телепортируется (для Клиента)
-	if RunService:IsClient() then
-		local lp = Players.LocalPlayer
-		if lp then
-			-- Отслеживаем попытку телепортации
-			local teleportConn = TeleportService.LocalPlayerTeleportAttempt:Connect(function(teleportState)
-				-- Закрываем сокет при старте или в процессе телепортации
-				if teleportState == Enum.TeleportState.Started or teleportState == Enum.TeleportState.InProgress then
-					warn("[WS] Обнаружена телепортация! Закрытие соединения...")
-					self:Close()
-				end
-			end)
-			table.insert(self._cleanupConnections, teleportConn)
-		end
+	-- 1. Срабатывает при выходе локального игрока или закрытии сервера/клиента (работает при телепортах)
+	local success, err = pcall(function()
+		game:BindToClose(function()
+			warn("[WS] Игра закрывается или инициирован телепорт! Закрытие соединения...")
+			self:Close()
+		end)
+	end)
+	if not success then
+		warn("[WS] Не удалось привязать BindToClose: " .. tostring(err))
 	end
 
 	-- 2. Если игрок отключается от сервера
@@ -219,7 +213,7 @@ function WebSocketManager:Close()
 	self.isConnected = false
 	self.isIdleClosed = false
 	
-	-- Отключаем все внутренние события слежения за выходом/телепортом
+	-- Отключаем все внутренние события слежения за выходом
 	for _, conn in ipairs(self._cleanupConnections) do
 		if conn then
 			pcall(function() conn:Disconnect() end)
