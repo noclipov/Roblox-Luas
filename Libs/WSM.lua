@@ -10,13 +10,14 @@ function WebSocketManager.new(url: string)
 	self.socket = nil
 	self.isConnected = false
 	self.isConnecting = false
+	self.isManuallyClosed = false -- Флаг ручного закрытия соединения
 	self.queue = {} -- Очередь для отправки данных, если сокет временно отключен
 	return self
 end
 
 -- Внутренний метод для безопасного подключения
 function WebSocketManager:_connect()
-	if self.isConnected or self.isConnecting then return end
+	if self.isConnected or self.isConnecting or self.isManuallyClosed then return end
 	self.isConnecting = true
 	
 	warn("[WS] Попытка подключения к " .. self.url .. "...")
@@ -49,6 +50,9 @@ function WebSocketManager:_connect()
 			end)
 		end
 	else
+		-- Если соединение закрыли вручную во время попытки коннекта, реконнект делать не нужно
+		if self.isManuallyClosed then return end
+		
 		warn("[WS] Ошибка подключения. Повторная попытка через 5 секунд...")
 		task.wait(5)
 		self:_connect()
@@ -57,6 +61,7 @@ end
 
 -- Публичный метод для запуска сессии
 function WebSocketManager:Start()
+	self.isManuallyClosed = false -- Сбрасываем флаг при (пере)запуске
 	task.spawn(function()
 		self:_connect()
 	end)
@@ -66,9 +71,38 @@ end
 function WebSocketManager:_handleDisconnect()
 	self.isConnected = false
 	self.socket = nil
+	
+	-- Если закрыли руками — не спамим попытками переподключения
+	if self.isManuallyClosed then
+		print("[WS] Соединение закрыто пользователем.")
+		return
+	end
+	
 	warn("[WS] Соединение разорвано!")
 	task.wait(5)
 	self:_connect()
+end
+
+-- Публичный метод для принудительного закрытия соединения
+function WebSocketManager:Close()
+	self.isManuallyClosed = true
+	self.isConnecting = false
+	self.isConnected = false
+	
+	-- Очищаем очередь, так как соединение больше не актуально
+	table.clear(self.queue)
+	
+	if self.socket then
+		local success, err = pcall(function()
+			self.socket:Close()
+		end)
+		if not success then
+			warn("[WS] Ошибка при вызове метода Close(): " .. tostring(err))
+		end
+		self.socket = nil
+	end
+	
+	print("[WS] Сессия успешно завершена.")
 end
 
 -- Отправка сообщений из очереди после переподключения
@@ -88,6 +122,11 @@ end
 -- @param placeId - ID плейса (обязательно)
 -- @param extraData - Таблица с любыми дополнительными динамическими данными (опционально)
 function WebSocketManager:SendData(playerName: string, placeId: number | string, extraData: table?)
+	if self.isManuallyClosed then
+		warn("[WS] Попытка отправить данные через закрытый сокет. Используй :Start() для возобновления работы.")
+		return
+	end
+
 	local packet = {
 		player_name = playerName,
 		place_id = tostring(placeId),
