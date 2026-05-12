@@ -90,7 +90,7 @@ function ScannerInstance:CreateNumericCallout(part, data, targetPlayer)
     local config = self.Config
     local bgu = Instance.new("BillboardGui", self.Gui)
     bgu.Adornee = part
-    bgu.StudsOffset = targetPlayer ~= game.Players.LocalPlayer and data.Offset or data.MyStatsOffsets[part]
+    bgu.StudsOffset = targetPlayer == game.Players.LocalPlayer and data.MyStatsOffsets and data.MyStatsOffsets[part] or data.Offset
     bgu.AlwaysOnTop = true
     bgu.Active = true
     bgu.Size = UDim2.fromOffset(100, 45)
