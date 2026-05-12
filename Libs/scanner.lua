@@ -140,7 +140,7 @@ function ScannerInstance:CreateNumericCallout(part, data, targetPlayer)
     -- Форматирование внешней функцией
     local function updateValue()
         local rawValue = targetPlayer:GetAttribute(data.Attr) or 0
-		valueLabel.Text = conv.T0Letters(rawValue)
+		valueLabel.Text = conv.ToLetters(rawValue)
         
         valueLabel.TextSize = 18
         TweenService:Create(valueLabel, TweenInfo.new(0.3), {TextSize = 14}):Play()
