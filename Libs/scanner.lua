@@ -43,31 +43,23 @@ function ScannerInstance.new(targetPlayer, config, isLocalPlayer)
     
     local targetChar = targetPlayer.Character
     if not targetChar then return nil end
-    -- 1. Рендерим выноски со статами (для себя или для цели)
-	if not self.isLocal and config.MyStatsOffsets or not config.MyStatsOffsets and self.isLocal then
-		for partName, data in pairs(config.StatsConfig) do
-			local part = targetChar:FindFirstChild(partName)
-			if part then
-				self:CreateNumericCallout(part, data, targetPlayer)
-			end
-		end
-	elseif MyStatsOffsets and self.isLocal then
-		for partName, offset in pairs(config.MyStatsOffsets) do
-			local part = targetChar:FindFirstChild(partName)
-			if part then
-				self:CreateNumericCallout(part, {Offset=offset}, targetPlayer)
-			end
-		end
-	end
 
-    -- 2. Док-панель действий создаем ТОЛЬКО для других игроков
+    -- 1. Рендерим выноски со статами
+    for partName, data in pairs(config.StatsConfig) do
+        local part = targetChar:FindFirstChild(partName)
+        if part then
+            self:CreateNumericCallout(part, data, targetPlayer)
+        end
+    end
+
+    -- 2. Док-панель действий (Только для чужих игроков)
     if not self.IsLocal then
         local head = targetChar:FindFirstChild("Head")
         if head then
             self:CreateActionDock(head, targetPlayer)
         end
 
-        -- Авто-закрытие чужого сканера при отдалении
+        -- Авто-закрытие чужого сканера при отдалении от игрока
         local distConn = RunService.Heartbeat:Connect(function()
             local myChar = LocalPlayer.Character
             if not targetChar or not myChar or not myChar.PrimaryPart then 
@@ -81,7 +73,7 @@ function ScannerInstance.new(targetPlayer, config, isLocalPlayer)
         end)
         table.insert(self.Connections, distConn)
     else
-        -- Если это локальный игрок, пересоздаем UI при респавне персонажа
+        -- Если это локальный игрок, пересоздаем UI при респавне
         local respawnConn = targetPlayer.CharacterAdded:Connect(function()
             task.wait(0.5)
             if localPlayerScanner == self then
@@ -98,10 +90,16 @@ function ScannerInstance:CreateNumericCallout(part, data, targetPlayer)
     local config = self.Config
     local bgu = Instance.new("BillboardGui", self.Gui)
     bgu.Adornee = part
-    bgu.StudsOffset = data.Offset
     bgu.AlwaysOnTop = true
     bgu.Active = true
     bgu.Size = UDim2.fromOffset(100, 45)
+
+    -- Проверяем кастомные настройки смещения (Offsets) для локального игрока
+    if self.IsLocal and config.LocalSetup and config.LocalSetup.Offsets and config.LocalSetup.Offsets[part.Name] then
+        bgu.StudsOffset = config.LocalSetup.Offsets[part.Name]
+    else
+        bgu.StudsOffset = data.Offset -- Обычный оффсет для остальных игроков
+    end
 
     local f = Instance.new("Frame", bgu)
     f.Size = UDim2.fromScale(1, 1)
@@ -139,10 +137,10 @@ function ScannerInstance:CreateNumericCallout(part, data, targetPlayer)
     clickBtn.Text = ""
     clickBtn.ZIndex = 5
 
-    -- Кастомное форматирование твоей функцией
+    -- Форматирование внешней функцией
     local function updateValue()
         local rawValue = targetPlayer:GetAttribute(data.Attr) or 0
-		valueLabel.Text = conv.ToLetters(rawValue)
+		valueLabel.Text = conv.T0Letters(rawValue)
         
         valueLabel.TextSize = 18
         TweenService:Create(valueLabel, TweenInfo.new(0.3), {TextSize = 14}):Play()
@@ -165,15 +163,21 @@ function ScannerInstance:CreateNumericCallout(part, data, targetPlayer)
         TweenService:Create(f, TweenInfo.new(0.15), {BackgroundTransparency = 0.2}):Play()
     end))
 
+    -- Определение дистанции затухания камеры (Индивидуально для себя / для других)
+    local maxVisibleDist = config.Style.MaxUiVisibleDistance
+    if self.IsLocal and config.LocalSetup and config.LocalSetup.MaxUiVisibleDistance then
+        maxVisibleDist = config.LocalSetup.MaxUiVisibleDistance
+    end
+
     -- Плавное затухание по дистанции камеры
     table.insert(self.Connections, RunService.RenderStepped:Connect(function()
         if not bgu.Parent or not workspace.CurrentCamera then return end
         local camDist = (part.Position - workspace.CurrentCamera.CFrame.Position).Magnitude
 
-        if (targetPlayer ~= game.Players.LocalPlayer and camDist > config.Style.MaxUiVisibleDistance) or camDist > config.Style.MaxMyUiVisibleDistance then
+        if camDist > maxVisibleDist then
             f.BackgroundTransparency = 1; title.TextTransparency = 1; valueLabel.TextTransparency = 1; stroke.Transparency = 1
-        elseif (targetPlayer ~= game.Players.LocalPlayer and camDist > (config.Style.MaxUiVisibleDistance-15)) or camDist > (config.Style.MaxMyUiVisibleDistance-5) then
-            local alpha = math.clamp((config.Style.MaxUiVisibleDistance - camDist) / 15, 0, 1)
+        elseif camDist > (maxVisibleDist - 15) then
+            local alpha = math.clamp((maxVisibleDist - camDist) / 15, 0, 1)
             f.BackgroundTransparency = 1 - (alpha * 0.8)
             title.TextTransparency = 1 - alpha
             valueLabel.TextTransparency = 1 - alpha
@@ -183,14 +187,15 @@ function ScannerInstance:CreateNumericCallout(part, data, targetPlayer)
         end
     end))
 
-    -- Копирование значения
+    -- Копирование значения по клику
     table.insert(self.Connections, clickBtn.MouseButton1Click:Connect(function()
         local copied = Utils.CopyToClipboard(valueLabel.Text)
+        
         if copied then
             msg.Mini("Mint", ("%s скопировано в буфер!"):format(valueLabel.Text), 3)
         else
             msg.Mini("Coral", "Ошибка доступа к буферу обмена", 3)
-        end
+		end
 
         local originalColor = stroke.Color
         TweenService:Create(stroke, TweenInfo.new(0.08), {Color = config.Style.Success, Thickness = 3}):Play()
@@ -353,16 +358,13 @@ function ObjectInteractionModule.Init(configTable)
                 local p = Players:GetPlayerFromCharacter(targetChar)
                 if p then
                     if p == LocalPlayer then
-                        -- Клик по себе игнорируем (статы и так видны), но закрываем чужой сканер
                         if activeTargetScanner then activeTargetScanner:Destroy() end
                     else
-                        -- Создаем или обновляем сканер для выбранной цели
                         if activeTargetScanner then activeTargetScanner:Destroy() end
                         activeTargetScanner = ScannerInstance.new(p, configTable, false)
                     end
                 end
             else
-                -- Клик в пустоту закрывает панель чужого игрока
                 if activeTargetScanner then
                     activeTargetScanner:Destroy()
                 end
@@ -371,7 +373,6 @@ function ObjectInteractionModule.Init(configTable)
     end)
 end
 
--- Вспомогательный метод перезагрузки для LocalPlayer при респавне
 function ObjectInteractionModule.RefreshLocal(configTable)
     if localPlayerScanner then
         localPlayerScanner:Destroy()
