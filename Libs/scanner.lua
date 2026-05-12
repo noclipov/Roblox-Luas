@@ -43,14 +43,22 @@ function ScannerInstance.new(targetPlayer, config, isLocalPlayer)
     
     local targetChar = targetPlayer.Character
     if not targetChar then return nil end
-
     -- 1. Рендерим выноски со статами (для себя или для цели)
-    for partName, data in pairs(config.StatsConfig) do
-        local part = targetChar:FindFirstChild(partName)
-        if part then
-            self:CreateNumericCallout(part, data, targetPlayer)
-        end
-    end
+	if not self.isLocal and config.MyStatsOffsets or not config.MyStatsOffsets and self.isLocal then
+		for partName, data in pairs(config.StatsConfig) do
+			local part = targetChar:FindFirstChild(partName)
+			if part then
+				self:CreateNumericCallout(part, data, targetPlayer)
+			end
+		end
+	elseif MyStatsOffsets and self.isLocal then
+		for partName, offset in pairs(config.MyStatsOffsets) do
+			local part = targetChar:FindFirstChild(partName)
+			if part then
+				self:CreateNumericCallout(part, {Offset=offset}, targetPlayer)
+			end
+		end
+	end
 
     -- 2. Док-панель действий создаем ТОЛЬКО для других игроков
     if not self.IsLocal then
@@ -90,7 +98,7 @@ function ScannerInstance:CreateNumericCallout(part, data, targetPlayer)
     local config = self.Config
     local bgu = Instance.new("BillboardGui", self.Gui)
     bgu.Adornee = part
-    bgu.StudsOffset = targetPlayer == game.Players.LocalPlayer and data.MyStatsOffsets and data.MyStatsOffsets[part] or data.Offset
+    bgu.StudsOffset = data.Offset
     bgu.AlwaysOnTop = true
     bgu.Active = true
     bgu.Size = UDim2.fromOffset(100, 45)
