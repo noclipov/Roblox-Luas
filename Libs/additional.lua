@@ -94,17 +94,12 @@ end
 Library.chatFilter = function(callback)
     if ChatService and ChatService.ChatVersion == Enum.ChatVersion.TextChatService then
         ChatService.OnIncomingMessage = function(textMessage)
-            if textMessage.TextSource then
-                local player = game.Players:GetPlayerByUserId(textMessage.TextSource.UserId)
-                if player then
-                    local display, filter = callback(textMessage, player)
-                    if display == false then
-                        textMessage.Text = ""
-                    elseif filter then
-                        textMessage.Text = filter
-                    end
-                end
-            end
+			local display, filter = callback(textMessage, textMessage.TextSource)
+			if display == false then
+				textMessage.Text = ""
+			elseif filter then
+				textMessage.Text = filter
+			end
         end
     end
 end
