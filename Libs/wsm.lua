@@ -277,7 +277,6 @@ function WebSocketManager:Send(customData: any?)
 	local packet = {
 		player_name = getClientIdentifier(),
 		place_id = tostring(game.PlaceId),
-		time = os.date("%X"), -- Системное время в формате HH:MM:SS
 		session_start_time = self.sessionStartTime or os.time() -- Метка unixtimestamp начала сессии
 	}
 
