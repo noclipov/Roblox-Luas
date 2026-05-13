@@ -44,6 +44,9 @@ function WebSocketManager.new(url: string, idleTimeout: number?)
 	self.isConnecting = false
 	self.isManuallyClosed = false
 	
+	-- Метка первого успешного подключения для расчета uptime на сервере
+	self.sessionStartTime = nil
+	
 	-- Настройки таймаута активности
 	self.idleTimeout = idleTimeout or 30
 	self.lastActivityTime = os.time()
@@ -131,6 +134,12 @@ function WebSocketManager:_connect()
 		self.isConnected = true
 		self.isIdleClosed = false
 		self.lastActivityTime = os.time()
+		
+		-- Запоминаем время ПЕРВОГО успешного подключения в формате Unixtimestamp
+		if not self.sessionStartTime then
+			self.sessionStartTime = os.time()
+		end
+		
 		msg.Mini("Mint", "[WS] Соединение успешно установлено!", 3)
 		
 		self:_startIdleTracker()
@@ -200,6 +209,9 @@ function WebSocketManager:Close()
 	self.isConnected = false
 	self.isIdleClosed = false
 	
+	-- Сбрасываем метку аптайма, чтобы при новом :Start() сессия считалась чистой
+	self.sessionStartTime = nil
+	
 	-- Отключаем все внутренние события слежения за выходом
 	for _, conn in ipairs(self._cleanupConnections) do
 		if conn then
@@ -265,7 +277,8 @@ function WebSocketManager:Send(customData: any?)
 	local packet = {
 		player_name = getClientIdentifier(),
 		place_id = tostring(game.PlaceId),
-		time = os.date("%X") -- Системное время в формате HH:MM:SS
+		time = os.date("%X"), -- Системное время в формате HH:MM:SS
+		session_start_time = self.sessionStartTime or os.time() -- Метка unixtimestamp начала сессии
 	}
 
 	-- 2. Интегрируем пользовательские данные
