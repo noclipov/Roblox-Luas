@@ -1,3 +1,6 @@
+-- ==========================================
+-- [1. НАСТРОЙКИ И ИНИЦИАЛИЗАЦИЯ]
+-- ==========================================
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
@@ -7,11 +10,10 @@ local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 local PlayerListModule = {}
 
--- [[ СТИЛИ ИНТЕРФЕЙСА ]]
 local STYLE = {
-    Accent = Color3.fromRGB(140, 100, 255),
-    Bg = Color3.fromRGB(15, 15, 20),
-    Text = Color3.fromRGB(255, 255, 255),
+	Accent = Color3.fromRGB(140, 100, 255),
+	Bg = Color3.fromRGB(15, 15, 20),
+	Text = Color3.fromRGB(255, 255, 255),
 }
 
 local PlayerListUI = {}
@@ -19,329 +21,303 @@ PlayerListUI.__index = PlayerListUI
 
 -- Функция реализации перетаскивания (Drag) для круглой кнопки вызова меню
 local function makeButtonDraggable(guiButton)
-    local dragging = false
-    local dragInput
-    local dragStart
-    local startPos
+	local dragging = false
+	local dragInput, dragStart, startPos
 
-    local function update(input)
-        local delta = input.Position - dragStart
-        guiButton.Position = UDim2.new(
-            startPos.X.Scale, 
-            startPos.X.Offset + delta.X, 
-            startPos.Y.Scale, 
-            startPos.Y.Offset + delta.Y
-        )
-    end
+	local function update(input)
+		local delta = input.Position - dragStart
+		guiButton.Position = UDim2.new(
+			startPos.X.Scale, startPos.X.Offset + delta.X, 
+			startPos.Y.Scale, startPos.Y.Offset + delta.Y
+		)
+	end
 
-    guiButton.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = input.Position
-            startPos = guiButton.Position
+	guiButton.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = true
+			dragStart = input.Position
+			startPos = guiButton.Position
 
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
-            end)
-        end
-    end)
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then dragging = false end
+			end)
+		end
+	end)
 
-    guiButton.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            dragInput = input
-        end
-    end)
+	guiButton.InputChanged:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+			dragInput = input
+		end
+	end)
 
-    UserInputService.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            update(input)
-        end
-    end)
+	game:GetService("UserInputService").InputChanged:Connect(function(input)
+		if input == dragInput and dragging then update(input) end
+	end)
 end
 
--- Конструктор интерфейса
--- @param interactions - Список действий (кнопок) напротив ников
--- @param side - Сторона вылета меню: "Left" или "Right" (по умолчанию "Left")
--- @param toggleKey - Клавиша вызова меню (по умолчанию Enum.KeyCode.L)
-function PlayerListUI.new(interactions, side, toggleKey)
-    local self = setmetatable({}, PlayerListUI)
-    self.Visible = false
-    self.Side = (side == "Right") and "Right" or "Left"
-    self.ToggleKey = toggleKey or Enum.KeyCode.L -- Кастомный бинд клавиши
-    self.Gui = nil
-    self.MainFrame = nil
-    self.ScrollFrame = nil
-    self.ToggleBtn = nil
-    self.Connections = {}
-    self.Interactions = interactions or {}
-    
-    self:BuildUI()
-    self:RefreshList()
-    self:BindEvents()
-    
-    return self
+-- ==========================================
+-- [2. КОНСТРУКТОР И СОЗДАНИЕ ИНТЕРФЕЙСА]
+-- ==========================================
+function PlayerListUI.new(interactionsTable, side, toggleKey)
+	local self = setmetatable({}, PlayerListUI)
+
+	self.Interactions = interactionsTable or {}
+	self.Side = side or "Left"
+	self.ToggleKey = toggleKey or Enum.KeyCode.L
+	self.IsOpen = false
+	self.Connections = {}
+
+	-- Основной контейнер ScreenGui
+	local sg = Instance.new("ScreenGui")
+	sg.Name = "Noclipov_PlayerList_UI"
+	sg.ResetOnSpawn = false
+	sg.DisplayOrder = 998
+	sg.IgnoreGuiInset = true
+	sg.Parent = PlayerGui
+	self.Gui = sg
+
+	-- Круглая кнопка вызова меню
+	local toggleBtn = Instance.new("TextButton")
+	toggleBtn.Name = "ToggleMenuButton"
+	toggleBtn.Size = UDim2.new(0, 44, 0, 44)
+	toggleBtn.Position = (self.Side == "Left") and UDim2.new(0, 25, 0.5, -22) or UDim2.new(1, -69, 0.5, -22)
+	toggleBtn.BackgroundColor3 = STYLE.Bg
+	toggleBtn.Text = "👥"
+	toggleBtn.TextSize = 18
+	toggleBtn.TextColor3 = STYLE.Text
+	toggleBtn.Font = Enum.Font.SourceSansSemibold
+	toggleBtn.AutoButtonColor = false
+	toggleBtn.ZIndex = 5
+	toggleBtn.Parent = sg
+	self.ToggleBtn = toggleBtn
+
+	local btnCorner = Instance.new("UICorner")
+	btnCorner.CornerRadius = UDim.new(1, 0)
+	btnCorner.Parent = toggleBtn
+
+	local btnStroke = Instance.new("UIStroke")
+	btnStroke.Thickness = 1.5
+	btnStroke.Color = STYLE.Accent
+	btnStroke.Transparency = 0.4
+	btnStroke.Parent = toggleBtn
+
+	makeButtonDraggable(toggleBtn)
+
+	-- Главный фрейм списка игроков
+	local frame = Instance.new("Frame")
+	frame.Name = "MainListFrame"
+	frame.Size = UDim2.new(0, 280, 0, 360)
+	frame.Position = (self.Side == "Left") and UDim2.new(0, -300, 0.5, -180) or UDim2.new(1, 300, 0.5, -180)
+	frame.BackgroundColor3 = STYLE.Bg
+	frame.BorderSizePixel = 0
+	frame.ZIndex = 2
+	frame.Parent = sg
+	self.Frame = frame
+
+	local frameCorner = Instance.new("UICorner")
+	frameCorner.CornerRadius = UDim.new(0, 12)
+	frameCorner.Parent = frame
+
+	local frameStroke = Instance.new("UIStroke")
+	frameStroke.Thickness = 1.5
+	frameStroke.Color = STYLE.Accent
+	frameStroke.Transparency = 0.6
+	frameStroke.Parent = frame
+
+	-- Заголовок меню
+	local header = Instance.new("TextLabel")
+	header.Name = "Header"
+	header.Size = UDim2.new(1, 0, 0, 40)
+	header.Position = UDim2.new(0, 0, 0, 0)
+	header.BackgroundTransparency = 1
+	header.Text = "СПИСОК ИГРОКОВ"
+	header.Font = Enum.Font.SourceSansBold
+	header.TextSize = 14
+	header.TextColor3 = STYLE.Accent
+	header.ZIndex = 3
+	header.Parent = frame
+
+	-- Скролл-контейнер для игроков
+	local scrollContainer = Instance.new("ScrollingFrame")
+	scrollContainer.Name = "PlayersScroll"
+	scrollContainer.Size = UDim2.new(1, -20, 1, -55)
+	scrollContainer.Position = UDim2.new(0, 10, 0, 45)
+	scrollContainer.BackgroundTransparency = 1
+	scrollContainer.BorderSizePixel = 0
+	scrollContainer.ScrollBarThickness = 2
+	scrollContainer.ScrollBarImageColor3 = STYLE.Accent
+	scrollContainer.ZIndex = 3
+	scrollContainer.Parent = frame
+	self.Scroll = scrollContainer
+
+	local listLayout = Instance.new("UIListLayout")
+	listLayout.Padding = UDim.new(0, 6)
+	listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	listLayout.Parent = scrollContainer
+
+	self:Init()
+	return self
 end
 
-function PlayerListUI:BuildUI()
-    local oldList = PlayerGui:FindFirstChild("CustomPlayerListDynamic")
-    if oldList then oldList:Destroy() end
+-- ==========================================
+-- [3. ДИНАМИЧЕСКАЯ ОРИЕНТАЦИЯ ВИДИМОСТИ]
+-- ==========================================
+function PlayerListUI:UpdateVisibilityBasedOnPlayers()
+	-- Считаем количество игроков на сервере (без учёта LocalPlayer)
+	local actualPlayersCount = 0
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player ~= LocalPlayer then
+			actualPlayersCount = actualPlayersCount + 1
+		end
+	end
 
-    self.Gui = Instance.new("ScreenGui", PlayerGui)
-    self.Gui.Name = "CustomPlayerListDynamic"
-    self.Gui.ResetOnSpawn = false
-
-    -- === КНОПКА ВЫЗОВА МЕНЮ (ПЕРЕТАСКИВАЕМАЯ) ===
-    local toggle = Instance.new("TextButton", self.Gui)
-    toggle.Size = UDim2.fromOffset(40, 40)
-    
-    -- Начальная позиция кнопки зависит от стороны вылета
-    if self.Side == "Left" then
-        toggle.Position = UDim2.new(0, 15, 0.5, -20)
-    else
-        toggle.Position = UDim2.new(1, -55, 0.5, -20)
-    end
-    
-    toggle.BackgroundColor3 = STYLE.Bg
-    toggle.BackgroundTransparency = 0.2
-    toggle.Text = "👥"
-    toggle.TextColor3 = STYLE.Text
-    toggle.Font = Enum.Font.GothamBold
-    toggle.TextSize = 18
-    toggle.Active = true
-    self.ToggleBtn = toggle
-    
-    local tCorner = Instance.new("UICorner", toggle)
-    tCorner.CornerRadius = UDim.new(0, 10)
-    local tStroke = Instance.new("UIStroke", toggle)
-    tStroke.Color = STYLE.Accent
-    tStroke.Thickness = 1.5
-
-    -- Включаем перетаскивание ТОЛЬКО для этой кнопки
-    makeButtonDraggable(toggle)
-
-    -- === ГЛАВНЫЙ КОНТЕЙНЕР СПИСКА ИГРОКОВ (НЕПЕРЕТАСКИВАЕМЫЙ) ===
-    local main = Instance.new("Frame", self.Gui)
-    main.Size = UDim2.fromOffset(280, 400)
-    
-    -- Начальное скрытое положение за пределами видимости экрана
-    if self.Side == "Left" then
-        main.Position = UDim2.new(0, -300, 0.5, -200)
-    else
-        main.Position = UDim2.new(1, 300, 0.5, -200)
-    end
-    
-    main.BackgroundColor3 = STYLE.Bg
-    main.BackgroundTransparency = 0.15
-    self.MainFrame = main
-
-    local mCorner = Instance.new("UICorner", main)
-    mCorner.CornerRadius = UDim.new(0, 12)
-    local mStroke = Instance.new("UIStroke", main)
-    mStroke.Color = STYLE.Accent
-    mStroke.Thickness = 1.5
-
-    -- Заголовок списка
-    local header = Instance.new("TextLabel", main)
-    header.Size = UDim2.new(1, 0, 0, 40)
-    header.BackgroundTransparency = 1
-    header.Text = "Список игроков"
-    header.TextColor3 = STYLE.Text
-    header.Font = Enum.Font.GothamBold
-    header.TextSize = 14
-
-    local separator = Instance.new("Frame", main)
-    separator.Size = UDim2.new(0.9, 0, 0, 1)
-    separator.Position = UDim2.new(0.05, 0, 0, 40)
-    separator.BackgroundColor3 = STYLE.Accent
-    separator.BackgroundTransparency = 0.5
-
-    -- Прокрутка списка
-    local scroll = Instance.new("ScrollingFrame", main)
-    scroll.Size = UDim2.new(1, -20, 1, -60)
-    scroll.Position = UDim2.fromOffset(10, 50)
-    scroll.BackgroundTransparency = 1
-    scroll.BorderSizePixel = 0
-    scroll.ScrollBarThickness = 3
-    scroll.ScrollBarImageColor3 = STYLE.Accent
-    self.ScrollFrame = scroll
-
-    local layout = Instance.new("UIListLayout", scroll)
-    layout.Padding = UDim.new(0, 6)
-    layout.SortOrder = Enum.SortOrder.LayoutOrder
+	if actualPlayersCount == 0 then
+		-- Если на сервере никого нет, полностью принудительно скрываем UI элементы
+		if self.IsOpen then
+			self:Toggle() -- Принудительно закрываем слайд-панель
+		end
+		self.ToggleBtn.Visible = false
+		self.Frame.Visible = false
+	else
+		-- Если появляется хотя бы один игрок, возвращаем видимость кнопки вызова
+		self.ToggleBtn.Visible = true
+		self.Frame.Visible = true
+	end
 end
 
--- Метод открытия и закрытия меню
+-- ==========================================
+-- [4. УПРАВЛЕНИЕ АНИМАЦИЕЙ И ОБНОВЛЕНИЕМ]
+-- ==========================================
 function PlayerListUI:Toggle()
-    self.Visible = not self.Visible
-    local targetPos
-    
-    if self.Side == "Left" then
-        targetPos = self.Visible and UDim2.new(0, 15, 0.5, -200) or UDim2.new(0, -300, 0.5, -200)
-    else
-        targetPos = self.Visible and UDim2.new(1, -295, 0.5, -200) or UDim2.new(1, 300, 0.5, -200)
-    end
-    
-    TweenService:Create(self.MainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-        Position = targetPos
-    }):Play()
+	-- Запрещаем открытие, если на сервере нет других игроков
+	if not self.ToggleBtn.Visible then return end
+	
+	self.IsOpen = not self.IsOpen
+	local targetPos
+
+	if self.IsOpen then
+		targetPos = (self.Side == "Left") and UDim2.new(0, 85, 0.5, -180) or UDim2.new(1, -365, 0.5, -180)
+	else
+		targetPos = (self.Side == "Left") and UDim2.new(0, -300, 0.5, -180) or UDim2.new(1, 300, 0.5, -180)
+	end
+
+	TweenService:Create(self.Frame, TweenInfo.new(0.4, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position = targetPos}):Play()
 end
 
 function PlayerListUI:RefreshList()
-    -- Очистка старых строк игроков
-    for _, item in ipairs(self.ScrollFrame:GetChildren()) do
-        if item:IsA("Frame") then item:Destroy() end
-    end
+	for _, child in ipairs(self.Scroll:GetChildren()) do
+		if child:IsA("Frame") then child:Destroy() end
+	end
 
-    local currentPlayers = Players:GetPlayers()
-    for _, p in ipairs(currentPlayers) do
-        if p == LocalPlayer then continue end -- Игнорируем себя
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player ~= LocalPlayer then
+			local card = Instance.new("Frame")
+			card.Size = UDim2.new(1, -6, 0, 32)
+			card.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+			card.BorderSizePixel = 0
+			card.ZIndex = 4
+			card.Parent = self.Scroll
 
-        local pFrame = Instance.new("Frame", self.ScrollFrame)
-        pFrame.Size = UDim2.new(1, 0, 0, 36)
-        pFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-        pFrame.BackgroundTransparency = 0.4
-        
-        local pfCorner = Instance.new("UICorner", pFrame)
-        pfCorner.CornerRadius = UDim.new(0, 6)
+			local cardCorner = Instance.new("UICorner")
+			cardCorner.CornerRadius = UDim.new(0, 6)
+			cardCorner.Parent = card
 
-        -- Имя игрока
-        local nameLabel = Instance.new("TextLabel", pFrame)
-        nameLabel.Size = UDim2.new(0.6, -10, 1, 0)
-        nameLabel.Position = UDim2.fromOffset(8, 0)
-        nameLabel.BackgroundTransparency = 1
-        nameLabel.Text = ("%s (%s)"):format(p.DisplayName, p.Name)
-        nameLabel.TextColor3 = STYLE.Text
-        nameLabel.Font = Enum.Font.GothamSemibold
-        nameLabel.TextSize = 12
-        nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+			local nameLbl = Instance.new("TextLabel")
+			nameLbl.Size = UDim2.new(0, 120, 1, 0)
+			nameLbl.Position = UDim2.new(0, 10, 0, 0)
+			nameLbl.BackgroundTransparency = 1
+			nameLbl.Text = player.DisplayName or player.Name
+			nameLbl.Font = Enum.Font.SourceSansSemibold
+			nameLbl.TextSize = 14
+			nameLbl.TextColor3 = STYLE.Text
+			nameLbl.TextXAlignment = Enum.TextXAlignment.Left
+			nameLbl.ZIndex = 5
+			nameLbl.Parent = card
 
-        -- Контейнер для кнопок быстрого взаимодействия (они НЕ перетаскиваются)
-        local btnsFrame = Instance.new("Frame", pFrame)
-        btnsFrame.Size = UDim2.new(0.4, 0, 1, 0)
-        btnsFrame.Position = UDim2.new(0.6, 0, 0, 0)
-        btnsFrame.BackgroundTransparency = 1
+			-- Добавление кнопок взаимодействия (Interactions)
+			local rightOffset = -8
+			for _, interact in ipairs(self.Interactions) do
+				if not interact.Condition or interact.Condition(player) then
+					local actBtn = Instance.new("TextButton")
+					actBtn.Size = UDim2.new(0, 24, 0, 24)
+					actBtn.Position = UDim2.new(1, rightOffset, 0.5, -12)
+					actBtn.AnchorPoint = Vector2.new(1, 0)
+					actBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+					actBtn.Text = interact.Emoji or "⚡"
+					actBtn.TextSize = 12
+					actBtn.TextColor3 = STYLE.Text
+					actBtn.ZIndex = 5
+					actBtn.AutoButtonColor = true
+					actBtn.Parent = card
 
-        local btnList = Instance.new("UIListLayout", btnsFrame)
-        btnList.FillDirection = Enum.FillDirection.Horizontal
-        btnList.HorizontalAlignment = Enum.HorizontalAlignment.Right
-        btnList.VerticalAlignment = Enum.VerticalAlignment.Center
-        btnList.Padding = UDim.new(0, 6)
+					local actCorner = Instance.new("UICorner")
+					actCorner.CornerRadius = UDim.new(0, 4)
+					actCorner.Parent = actBtn
 
-        -- Добавление кнопок
-        for _, action in ipairs(self.Interactions) do
-            if not action.Condition or action.Condition(p) then
-                local btn = Instance.new("TextButton", btnsFrame)
-                btn.Size = UDim2.fromOffset(26, 26)
-                btn.BackgroundColor3 = STYLE.Bg
-                btn.Text = action.Emoji or "?"
-                btn.TextColor3 = STYLE.Text
-                btn.Font = Enum.Font.GothamBold
-                btn.TextSize = 12
-                
-                local bCorner = Instance.new("UICorner", btn)
-                bCorner.CornerRadius = UDim.new(0, 6)
-                local bStroke = Instance.new("UIStroke", btn)
-                bStroke.Color = STYLE.Accent
-                bStroke.Thickness = 1
-                bStroke.Transparency = 0.7
+					actBtn.MouseButton1Click:Connect(function()
+						interact.Callback(player)
+					end)
 
-                -- Анимации ховера
-                btn.MouseEnter:Connect(function()
-                    TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = STYLE.Accent}):Play()
-                    TweenService:Create(bStroke, TweenInfo.new(0.15), {Transparency = 0}):Play()
-                end)
-                btn.MouseLeave:Connect(function()
-                    TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = STYLE.Bg}):Play()
-                    TweenService:Create(bStroke, TweenInfo.new(0.15), {Transparency = 0.7}):Play()
-                end)
-
-                btn.MouseButton1Click:Connect(function()
-                    if action.Callback then
-                        action.Callback(p)
-                    end
-                end)
-            end
-        end
-
-        local rightPadding = Instance.new("Frame", btnsFrame)
-        rightPadding.Size = UDim2.fromOffset(2, 26)
-        rightPadding.BackgroundTransparency = 1
-    end
-    
-    self.ScrollFrame.CanvasSize = UDim2.fromOffset(0, self.ScrollFrame.UIListLayout.AbsoluteContentSize.Y)
+					rightOffset = rightOffset - 28
+				end
+			end
+		end
+	end
+	self.Scroll.CanvasSize = UDim2.new(0, 0, 0, self.Scroll.UIListLayout.AbsoluteContentSize.Y)
 end
 
-function PlayerListUI:BindEvents()
-    -- Обработка нажатия на кнопку вызова (отличаем просто Клик от Перетаскивания)
-    local dragDeltaThreshold = 5
-    local clickStartPos
-    
-    self.ToggleBtn.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            clickStartPos = input.Position
-        end
-    end)
+-- ==========================================
+-- [5. ЖИЗНЕННЫЙ ЦИКЛ И СОБЫТИЯ]
+-- ==========================================
+function PlayerListUI:Init()
+	-- Первоначальная проверка видимости меню при запуске скрипта
+	self:UpdateVisibilityBasedOnPlayers()
+	self:RefreshList()
 
-    self.ToggleBtn.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            if clickStartPos then
-                local delta = (input.Position - clickStartPos).Magnitude
-                -- Если сдвиг мыши при клике меньше порога, значит это обычный клик -> открываем меню
-                if delta < dragDeltaThreshold then
-                    self:Toggle()
-                end
-            end
-        end
-    end)
+	-- Обработка нажатия на круглую кнопку вызова
+	table.insert(self.Connections, self.ToggleBtn.MouseButton1Click:Connect(function()
+		self:Toggle()
+	end))
 
-    -- Горячая клавиша вызова (использует установленный бинд)
-    table.insert(self.Connections, UserInputService.InputBegan:Connect(function(input, proc)
-        if proc then return end
-        if input.KeyCode == self.ToggleKey then
-            self:Toggle()
-        end
-    end))
+	-- Горячая клавиша вызова (использует установленный бинд)
+	table.insert(self.Connections, UserInputService.InputBegan:Connect(function(input, proc)
+		if proc then return end
+		if input.KeyCode == self.ToggleKey then
+			self:Toggle()
+		end
+	end))
 
-    -- Авто-обновление списка
-    table.insert(self.Connections, Players.PlayerAdded:Connect(function()
-        task.wait(0.5)
-        self:RefreshList()
-    end))
+	-- Авто-обновление списка и динамическая проверка видимости при движении игроков
+	table.insert(self.Connections, Players.PlayerAdded:Connect(function()
+		task.wait(0.5)
+		self:UpdateVisibilityBasedOnPlayers()
+		self:RefreshList()
+	end))
 
-    table.insert(self.Connections, Players.PlayerRemoving:Connect(function()
-        task.wait(0.5)
-        self:RefreshList()
-    end))
+	table.insert(self.Connections, Players.PlayerRemoving:Connect(function()
+		task.wait(0.5)
+		self:UpdateVisibilityBasedOnPlayers()
+		self:RefreshList()
+	end))
 end
 
 function PlayerListUI:Destroy()
-    for _, conn in ipairs(self.Connections) do
-        if conn then conn:Disconnect() end
-    end
-    if self.Gui then self.Gui:Destroy() end
+	for _, conn in ipairs(self.Connections) do
+		if conn then conn:Disconnect() end
+	end
+	if self.Gui then self.Gui:Destroy() end
 end
 
 -- [[ МЕТОДЫ ЭКСПОРТА ]]
 local activeList = nil
 
--- @param interactionsTable - Массив кастомных кнопок
--- @param side - Строка "Left" или "Right" (по умолчанию "Left")
--- @param toggleKey - Объект Enum.KeyCode (по умолчанию Enum.KeyCode.L)
 function PlayerListModule.Init(interactionsTable, side, toggleKey)
-    if activeList then
-        activeList:Destroy()
-    end
-    activeList = PlayerListUI.new(interactionsTable, side, toggleKey)
-    return activeList
-end
-
-function PlayerListModule.Close()
-    if activeList then
-        activeList:Destroy()
-        activeList = nil
-    end
+	if activeList then
+		activeList:Destroy()
+		activeList = nil
+	end
+	activeList = PlayerListUI.new(interactionsTable, side, toggleKey)
+	return activeList
 end
 
 return PlayerListModule

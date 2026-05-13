@@ -17,27 +17,12 @@ Library.dist_to = function(pos)
     return math.floor(((game.Players.LocalPlayer.Character.HumanoidRootPart).Position - pos).magnitude) or 0
 end
 Library.is_moving = function(humanoid)
-    if (humanoid.MoveDirection == Vector3.new(0,0,0) and humanoid:GetState() ~= Enum.HumanoidStateType.Jumping and humanoid:GetState() ~= Enum.HumanoidStateType.Freefall) then return false end
-    return true
+    if not humanoid then return false end
+	return humanoid.MoveDirection.Magnitude == 0 and humanoid:GetState() ~= Enum.HumanoidStateType.Jumping and humanoid:GetState() ~= Enum.HumanoidStateType.FreeFall 
 end
 Library.is_alive = function(ply)
 	if not ply.Character then return false end
     if ply.Character:FindFirstChild("Humanoid") and ply.Character:FindFirstChild("Humanoid").Health > 0 then return true end
-    return false
-end
-Library.int = function(value)
-    if tonumber(value) then return tonumber(value) end
-    return 0
-end
-Library.str = function(value)
-    return tostring(value) or ""
-end
-Library.has_value = function(src, value)
-    if type(src) == "string" then
-        return string.find(src, value) and true or false
-    elseif type(src) == "table" then
-        for i,v in pairs(src) do if v == value then return true end end
-    end
     return false
 end
 Library.get_ping = function() 
@@ -47,18 +32,6 @@ Library.get_friends = function(player)
     local friends = {}
     for i,v in pairs(pls:GetChildren()) do if player:IsFriendsWith(v.UserId) then table.insert(friends, v) end end
     return friends
-end
-Library.format_number = function(number)
-    local str_num = tostring(number)
-    if tonumber(str_num:sub(-1)) > 3 then
-        return str_num..'th'
-    elseif tonumber(str_num:sub(-1)) == 3 then
-        return str_num..'rd'
-    elseif tonumber(str_num:sub(-1)) == 2 then
-        return str_num..'nd'
-    elseif tonumber(str_num:sub(-1)) == 1 then
-        return str_num..'st'
-    end
 end
 Library.join_place = function(placeid, jobid)
     placeid = placeid or game.PlaceId
@@ -118,8 +91,22 @@ end
 Library.chat = function(text)
 	ChatService.TextChannels.RBXGeneral:SendAsync(text)
 end
-Library.chat_filter = function(condition)
-	ChatService.TextChannels.RBXGeneral.ShouldDeliverCallback = condition
+Library.chatFilter = function(callback)
+    if ChatService and ChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+        ChatService.OnIncomingMessage = function(textMessage)
+            if textMessage.TextSource then
+                local player = game.Players:GetPlayerByUserId(textMessage.TextSource.UserId)
+                if player then
+                    local display, filter = callback(textMessage, player)
+                    if display == false then
+                        textMessage.Text = ""
+                    elseif filter then
+                        textMessage.Text = filter
+                    end
+                end
+            end
+        end
+    end
 end
 Library.toggle_coregui = function(coregui, state)
 	game.StarterGui:SetCoreGuiEnabled(coregui, state)
