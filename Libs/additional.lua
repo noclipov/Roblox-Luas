@@ -91,16 +91,20 @@ end
 Library.chat = function(text)
 	ChatService.TextChannels.RBXGeneral:SendAsync(text)
 end
-Library.chatFilter = function(callback)
-    if ChatService and ChatService.ChatVersion == Enum.ChatVersion.TextChatService then
-        ChatService.OnIncomingMessage = function(textMessage)
-			local display, filter = callback(textMessage, textMessage.TextSource)
-			if display == false then
-				textMessage.Text = ""
-			elseif filter then
-				textMessage.Text = filter
+Library.chatFilter = function(callback, isfilter)
+    if ChatService and ChatService.ChatVersion == Enum.ChatVersion.TextChatService then 
+		if isfilter then
+			ChatService.OnIncomingMessage = function(textMessage)
+				local display, filter = callback(textMessage, textMessage.TextSource)
+				if display == false then
+					textMessage.Text = ""
+				elseif filter then
+					textMessage.Text = filter
+				end
 			end
-        end
+		else 
+			ChatService.TextChannels.RBXGeneral.ShouldDeliverCallback = callback
+		end
     end
 end
 Library.toggle_coregui = function(coregui, state)
