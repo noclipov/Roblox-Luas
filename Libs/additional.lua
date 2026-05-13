@@ -101,6 +101,12 @@ Library.equip_tool = function(name, instance)
 		lp.Character:WaitForChild("Humanoid"):UnequipTools()
 	end
 end
+Library.remove_tool = function(name, instance)
+	if not lp.Character then return end
+	if name and lp.Backpack:FindFirstChild(name) or instance then
+		(name and lp.Backpack[name] or instance):Destroy()
+	end
+end
 Library.inside_cube = function(point, cube)
 	if not cube then return end
 	point = point or lp.Character.PrimaryPart
@@ -114,6 +120,9 @@ Library.chat = function(text)
 end
 Library.chat_filter = function(condition)
 	ChatService.TextChannels.RBXGeneral.ShouldDeliverCallback = condition
+end
+Library.toggle_coregui = function(coregui, state)
+	game.StarterGui:SetCoreGuiEnabled(coregui, state)
 end
 Library.ss = function()
     msg.Mini("Purple", "Simple Spy: Loading", 2)
@@ -140,9 +149,11 @@ local alias_list = {
 	["unhl_player"] = {"unhlPlayer","UnHLPlayer","unhlplayer"},
 	["get_teleport"] = {"getTeleport","GetTeleport","getteleport"},
 	["equip_tool"] = {"equipTool","EquipTool","equiptool"},
+	["remove_tool"] = {"removeTool","RemoveTool","removetool"},
 	["inside_cube"] = {"insideCube","InsideCube","insidecube"},
 	["chat"] = {"Chat","message","send_message", "Message", "SendMessage", "sendMessage"},
 	["chat_filter"] = {"filter","ChatFilter","chatFilter", "chatfilter"},
+	["toggle_coregui"] = {"toggleCG","toggleCoreGui","CoreGui", "coregui"},
 }
 
 for src, aliases in pairs(alias_list) do
