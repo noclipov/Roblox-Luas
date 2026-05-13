@@ -6,6 +6,7 @@ local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local Mouse = LocalPlayer:GetMouse()
+local Camera = workspace.CurrentCamera
 
 local conv = loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Libs/convs.lua"))()
 local msg = loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Libs/notify.lua"))()
@@ -196,15 +197,12 @@ function ScannerInstance:CreateInteractions()
 		stroke.Parent = btn
 		
 		btn.MouseEnter:Connect(function()
-			-- ХОДОК-ПРОВЕРКА: Если окно стало невидимым/полупрозрачным, эффект наведения полностью отключается
 			if self.CardFrame.GroupTransparency >= 0.95 then return end
-			
 			TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(45, 45, 60)}):Play()
 			TweenService:Create(stroke, TweenInfo.new(0.15), {Transparency = 0.4}):Play()
 		end)
 		
 		btn.MouseLeave:Connect(function()
-			-- Возвращаем в дефолт в любом случае, чтобы при приближении кнопки не залипали
 			TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(30, 30, 40)}):Play()
 			TweenService:Create(stroke, TweenInfo.new(0.15), {Transparency = 0.8}):Play()
 		end)
@@ -240,7 +238,16 @@ function ScannerInstance:StartTracking()
 		local part = char:FindFirstChild(targetPartName)
 		if not part then self.Gui.Enabled = false return end
 		
-		local distance = (localChar.Head.Position - part.Position).Magnitude
+		-- РАСЧЕТ ДИСТАНЦИИ: Если проверяем себя, считаем расстояние от своей головы до КАМЕРЫ.
+		-- Если проверяем чужого игрока, считаем расстояние между головами.
+		local distance
+		if self.IsLocal then
+			distance = (Camera.CFrame.Position - part.Position).Magnitude
+		else
+			distance = (localChar.Head.Position - part.Position).Magnitude
+		end
+		
+		-- Скрытие по максимальной дистанции
 		if distance > maxDist then
 			self.Gui.Enabled = false
 			self.Gui.Active = false
@@ -257,6 +264,7 @@ function ScannerInstance:StartTracking()
 		end
 		self.Gui.Enabled = true
 		
+		-- Расчет плавного изменения прозрачности (GroupTransparency)
 		if distance > startFade then
 			local alpha = (distance - startFade) / (maxDist - startFade)
 			self.CardFrame.GroupTransparency = math.clamp(alpha, 0, 1)
@@ -264,7 +272,7 @@ function ScannerInstance:StartTracking()
 			self.CardFrame.GroupTransparency = 0
 		end
 		
-		-- Управление интерактивностью и аппаратным вводом (колесико, ПКМ и наведение)
+		-- Управление блокировкой мыши (обработка наведения) и свойством Visible
 		if self.CardFrame.GroupTransparency >= 0.95 then
 			if self.Gui.Active then self.Gui.Active = false end
 			if self.CardFrame.Visible then self.CardFrame.Visible = false end
