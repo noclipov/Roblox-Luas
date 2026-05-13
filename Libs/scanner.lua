@@ -146,8 +146,16 @@ function ScannerInstance:CreateNumericCallout(part, data, targetPlayer)
         TweenService:Create(valueLabel, TweenInfo.new(0.3), {TextSize = 14}):Play()
     end
 
+	-- Определение дистанции затухания камеры (Индивидуально для себя / для других)
+    local maxVisibleDist = config.Style.MaxUiVisibleDistance
+    if self.IsLocal and config.LocalSetup and config.LocalSetup.MaxUiVisibleDistance then
+        maxVisibleDist = config.LocalSetup.MaxUiVisibleDistance
+    end
+
     -- Эффекты Hover
     table.insert(self.Connections, clickBtn.MouseEnter:Connect(function()
+        local camDist = (part.Position - workspace.CurrentCamera.CFrame.Position).Magnitude
+		if camDist > maxVisibleDist then return end
         TweenService:Create(stroke, TweenInfo.new(0.15), {
             Thickness = 2.5,
             Color = data.Color:Lerp(Color3.new(1, 1, 1), 0.25)
@@ -156,18 +164,14 @@ function ScannerInstance:CreateNumericCallout(part, data, targetPlayer)
     end))
 
     table.insert(self.Connections, clickBtn.MouseLeave:Connect(function()
+        local camDist = (part.Position - workspace.CurrentCamera.CFrame.Position).Magnitude
+		if camDist > maxVisibleDist then return end
         TweenService:Create(stroke, TweenInfo.new(0.15), {
             Thickness = 1.5,
             Color = data.Color
         }):Play()
         TweenService:Create(f, TweenInfo.new(0.15), {BackgroundTransparency = 0.2}):Play()
     end))
-
-    -- Определение дистанции затухания камеры (Индивидуально для себя / для других)
-    local maxVisibleDist = config.Style.MaxUiVisibleDistance
-    if self.IsLocal and config.LocalSetup and config.LocalSetup.MaxUiVisibleDistance then
-        maxVisibleDist = config.LocalSetup.MaxUiVisibleDistance
-    end
 
     -- Плавное затухание по дистанции камеры
     table.insert(self.Connections, RunService.RenderStepped:Connect(function()
