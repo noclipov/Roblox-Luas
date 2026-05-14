@@ -6,350 +6,389 @@ local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local Mouse = LocalPlayer:GetMouse()
-local Camera = workspace.CurrentCamera
 
 local conv = loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Libs/convs.lua"))()
 local msg = loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Libs/notify.lua"))()
-local ObjectInteractionModule = table.create(4)
+local ObjectInteractionModule = {}
 local activeTargetScanner = nil
 local localPlayerScanner = nil
 
 -- [[ ВСТРОЕННЫЕ СЛУЖЕБНЫЕ МЕТОДЫ ]]
-local Utils = table.create(1)
+local Utils = {}
+
+-- Безопасная функция работы с буфером обмена эксплоитов
 function Utils.CopyToClipboard(text)
-	local setC = setclipboard or toclipboard or (Clipboard and Clipboard.set)
-	if setC then
-		pcall(function() setC(tostring(text)) end)
-		return true
-	end
-	return false
+    local setC = setclipboard or toclipboard or (Clipboard and Clipboard.set)
+    if setC then
+        pcall(function()
+            setC(tostring(text))
+        end)
+        return true
+    end
+    return false
 end
 
 -- [[ КЛАСС ВЗАИМОДЕЙСТВИЯ (SCANNER INSTANCE) ]]
 local ScannerInstance = {}
 ScannerInstance.__index = ScannerInstance
 
-function ScannerInstance.new(targetPlayer, config, isLocal)
-	local self = setmetatable({}, ScannerInstance)
-	
-	self.TargetPlayer = targetPlayer
-	self.Config = config
-	self.Style = config.Style
-	self.IsLocal = isLocal
-	self.Connections = table.create(4)
-	self.AttributeConnections = table.create(4)
-	self.Buttons = table.create(4)
-	
-	self:CreateUI()
-	if not isLocal then
-		self:CreateInteractions()
-	end
-	self:StartTracking()
-	
-	return self
+function ScannerInstance.new(targetPlayer, config, isLocalPlayer)
+    local self = setmetatable({}, ScannerInstance)
+    self.Target = targetPlayer
+    self.Config = config
+    self.IsLocal = isLocalPlayer or false
+    self.Gui = Instance.new("ScreenGui", PlayerGui)
+    self.Gui.Name = isLocalPlayer and "LocalNumericScanner" or "NumericScanner"
+    self.Connections = {}
+    
+    local targetChar = targetPlayer.Character
+    if not targetChar then return nil end
+
+    -- 1. Рендерим выноски со статами
+    for partName, data in pairs(config.StatsConfig) do
+        local part = targetChar:FindFirstChild(partName)
+        if part then
+            self:CreateNumericCallout(part, data, targetPlayer)
+        end
+    end
+
+    -- 2. Док-панель действий (Только для чужих игроков)
+    if not self.IsLocal then
+        local head = targetChar:FindFirstChild("Head")
+        if head then
+            self:CreateActionDock(head, targetPlayer)
+        end
+
+        -- Авто-закрытие чужого сканера при отдалении от игрока
+        local distConn = RunService.Heartbeat:Connect(function()
+            local myChar = LocalPlayer.Character
+            if not targetChar or not myChar or not myChar.PrimaryPart then 
+                self:Destroy() 
+                return 
+            end
+            local dist = (targetChar.PrimaryPart.Position - myChar.PrimaryPart.Position).Magnitude
+            if dist > config.Style.Distance then 
+                self:Destroy() 
+            end
+        end)
+        table.insert(self.Connections, distConn)
+    else
+        -- Если это локальный игрок, пересоздаем UI при респавне
+        local respawnConn = targetPlayer.CharacterAdded:Connect(function()
+            task.wait(0.5)
+            if localPlayerScanner == self then
+                ObjectInteractionModule.RefreshLocal(config)
+            end
+        end)
+        table.insert(self.Connections, respawnConn)
+    end
+
+    return self
 end
 
-function ScannerInstance:CreateUI()
-	local bb = Instance.new("BillboardGui")
-	bb.Name = "Noclipov_Scanner_3D"
-	bb.AlwaysOnTop = true
-	bb.ResetOnSpawn = false
-	bb.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-	
-	if self.IsLocal then
-		bb.Size = UDim2.new(0, 160, 0, 85)
-	else
-		bb.Size = UDim2.new(0, 190, 0, 120)
-	end
-	
-	local card = Instance.new("CanvasGroup")
-	card.Name = "CardFrame"
-	card.Size = UDim2.new(1, 0, 1, 0)
-	card.BackgroundColor3 = self.Style.Bg or Color3.fromRGB(15, 15, 20)
-	card.BorderSizePixel = 0
-	card.GroupTransparency = 0
-	card.Parent = bb
-	self.CardFrame = card
-	
-	local c = Instance.new("UICorner")
-	c.CornerRadius = UDim.new(0, 8)
-	c.Parent = card
-	
-	local stroke = Instance.new("UIStroke")
-	stroke.Thickness = 1.2
-	stroke.Color = self.Style.Accent
-	stroke.Transparency = 0.5
-	stroke.Parent = card
-	
-	local title = Instance.new("TextLabel")
-	title.Name = "PlayerTitle"
-	title.Size = UDim2.new(1, -20, 0, 24)
-	title.Position = UDim2.new(0, 10, 0, 4)
-	title.BackgroundTransparency = 1
-	title.Text = tostring(self.TargetPlayer.DisplayName or self.TargetPlayer.Name):upper()
-	title.Font = Enum.Font.SourceSansBold
-	title.TextSize = 13
-	title.TextColor3 = self.Style.Highlight
-	title.TextXAlignment = Enum.TextXAlignment.Left
-	title.Parent = card
-	
-	local list = Instance.new("Frame")
-	list.Name = "StatsList"
-	list.Size = UDim2.new(1, -20, 0, self.IsLocal and 50 or 45)
-	list.Position = UDim2.new(0, 10, 0, 26)
-	list.BackgroundTransparency = 1
-	list.Parent = card
-	
-	local layout = Instance.new("UIListLayout")
-	layout.Padding = UDim.new(0, 2)
-	layout.SortOrder = Enum.SortOrder.LayoutOrder
-	layout.Parent = list
-	
-	local cfgMap = self.IsLocal and self.Config.LocalSetup.Offsets or self.Config.StatsConfig
-	local idx = 1
-	
-	for partName, statData in pairs(cfgMap) do
-		local globalData = self.Config.StatsConfig[partName]
-		if globalData then
-			local row = Instance.new("Frame")
-			row.Size = UDim2.new(1, 0, 0, 13)
-			row.BackgroundTransparency = 1
-			row.LayoutOrder = idx
-			row.Parent = list
-			
-			local txt = Instance.new("TextLabel")
-			txt.Size = UDim2.new(1, 0, 1, 0)
-			txt.BackgroundTransparency = 1
-			txt.Font = Enum.Font.SourceSansSemibold
-			txt.TextSize = 12
-			txt.TextColor3 = self.Style.Text
-			txt.TextXAlignment = Enum.TextXAlignment.Left
-			txt.Parent = row
-			
-			local function updateValue()
-				local val = self.TargetPlayer:GetAttribute(globalData.Attr) or 0
-				txt.Text = string.format("%s %s: <font color='#%s'>%s</font>", 
-					globalData.Emoji or "", 
-					globalData.Name, 
-					globalData.Color:ToHex(), 
-					conv.ToLetters(val)
-				)
-				txt.RichText = true
-			end
-			
-			updateValue()
-			table.insert(self.AttributeConnections, self.TargetPlayer:GetAttributeChangedSignal(globalData.Attr):Connect(updateValue))
-			idx = idx + 1
+function ScannerInstance:CreateNumericCallout(part, data, targetPlayer)
+    local config = self.Config
+    local bgu = Instance.new("BillboardGui", self.Gui)
+    bgu.Adornee = part
+    bgu.AlwaysOnTop = true
+    bgu.Active = true
+    bgu.Size = UDim2.fromOffset(100, 45)
+
+    -- Проверяем кастомные настройки смещения (Offsets) для локального игрока
+    if self.IsLocal and config.LocalSetup and config.LocalSetup.Offsets and config.LocalSetup.Offsets[part.Name] then
+        bgu.StudsOffset = config.LocalSetup.Offsets[part.Name]
+    else
+        bgu.StudsOffset = data.Offset -- Обычный оффсет для остальных игроков
+    end
+
+    local f = Instance.new("Frame", bgu)
+    f.Size = UDim2.fromScale(1, 1)
+    f.BackgroundColor3 = config.Style.Bg
+    f.BackgroundTransparency = 0.2
+    Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
+    
+    local stroke = Instance.new("UIStroke", f)
+    stroke.Color = data.Color
+    stroke.Thickness = 1.5
+
+    local title = Instance.new("TextLabel", f)
+    title.Size = UDim2.new(1, 0, 0, 18)
+    title.Position = UDim2.fromOffset(0, 4)
+    title.Text = data.Emoji .. " " .. data.Name
+    title.TextColor3 = Color3.fromRGB(200, 200, 200)
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 10
+    title.BackgroundTransparency = 1
+    title.ZIndex = 2
+
+    local valueLabel = Instance.new("TextLabel", f)
+    valueLabel.Size = UDim2.new(1, 0, 0, 20)
+    valueLabel.Position = UDim2.fromOffset(0, 18)
+    valueLabel.Text = "0"
+    valueLabel.TextColor3 = data.Color
+    valueLabel.Font = Enum.Font.GothamBlack
+    valueLabel.TextSize = 14
+    valueLabel.BackgroundTransparency = 1
+    valueLabel.ZIndex = 2
+
+    local clickBtn = Instance.new("TextButton", f)
+    clickBtn.Size = UDim2.fromScale(1, 1)
+    clickBtn.BackgroundTransparency = 1
+    clickBtn.Text = ""
+    clickBtn.ZIndex = 5
+
+    -- Форматирование внешней функцией
+    local function updateValue()
+        local rawValue = targetPlayer:GetAttribute(data.Attr) or 0
+		valueLabel.Text = conv.ToLetters(rawValue)
+        
+        valueLabel.TextSize = 18
+        TweenService:Create(valueLabel, TweenInfo.new(0.3), {TextSize = 14}):Play()
+    end
+
+    -- Эффекты Hover
+    table.insert(self.Connections, clickBtn.MouseEnter:Connect(function()
+        TweenService:Create(stroke, TweenInfo.new(0.15), {
+            Thickness = 2.5,
+            Color = data.Color:Lerp(Color3.new(1, 1, 1), 0.25)
+        }):Play()
+        TweenService:Create(f, TweenInfo.new(0.15), {BackgroundTransparency = 0.05}):Play()
+    end))
+
+    table.insert(self.Connections, clickBtn.MouseLeave:Connect(function()
+        TweenService:Create(stroke, TweenInfo.new(0.15), {
+            Thickness = 1.5,
+            Color = data.Color
+        }):Play()
+        TweenService:Create(f, TweenInfo.new(0.15), {BackgroundTransparency = 0.2}):Play()
+    end))
+
+    -- Определение дистанции затухания камеры (Индивидуально для себя / для других)
+    local maxVisibleDist = config.Style.MaxUiVisibleDistance
+    if self.IsLocal and config.LocalSetup and config.LocalSetup.MaxUiVisibleDistance then
+        maxVisibleDist = config.LocalSetup.MaxUiVisibleDistance
+    end
+
+    -- Плавное затухание по дистанции камеры
+    table.insert(self.Connections, RunService.RenderStepped:Connect(function()
+        if not bgu.Parent or not workspace.CurrentCamera then return end
+        local camDist = (part.Position - workspace.CurrentCamera.CFrame.Position).Magnitude
+
+        if camDist > maxVisibleDist then
+            f.BackgroundTransparency = 1; title.TextTransparency = 1; valueLabel.TextTransparency = 1; stroke.Transparency = 1
+        elseif camDist > (maxVisibleDist - 15) then
+            local alpha = math.clamp((maxVisibleDist - camDist) / 15, 0, 1)
+            f.BackgroundTransparency = 1 - (alpha * 0.8)
+            title.TextTransparency = 1 - alpha
+            valueLabel.TextTransparency = 1 - alpha
+            stroke.Transparency = 1 - alpha
+        else
+            f.BackgroundTransparency = 0.2; title.TextTransparency = 0; valueLabel.TextTransparency = 0; stroke.Transparency = 0
+        end
+    end))
+
+    -- Копирование значения по клику
+    table.insert(self.Connections, clickBtn.MouseButton1Click:Connect(function()
+        local copied = Utils.CopyToClipboard(valueLabel.Text)
+        
+        if copied then
+            msg.Mini("Mint", ("%s скопировано в буфер!"):format(valueLabel.Text), 3)
+        else
+            msg.Mini("Coral", "Ошибка доступа к буферу обмена", 3)
 		end
-	end
-	
-	self.Gui = bb
-	bb.Parent = PlayerGui
+
+        local originalColor = stroke.Color
+        TweenService:Create(stroke, TweenInfo.new(0.08), {Color = config.Style.Success, Thickness = 3}):Play()
+        task.delay(0.2, function()
+            if stroke.Parent then
+                TweenService:Create(stroke, TweenInfo.new(0.3), {Color = originalColor, Thickness = 1.5}):Play()
+            end
+        end)
+    end))
+
+    table.insert(self.Connections, targetPlayer:GetAttributeChangedSignal(data.Attr):Connect(updateValue))
+    updateValue()
 end
 
-function ScannerInstance:CreateInteractions()
-	local btnContainer = Instance.new("Frame")
-	btnContainer.Name = "InteractionsContainer"
-	btnContainer.Size = UDim2.new(1, -20, 0, 32)
-	btnContainer.Position = UDim2.new(0, 10, 1, -38)
-	btnContainer.BackgroundTransparency = 1
-	btnContainer.Parent = self.CardFrame
-	
-	local layout = Instance.new("UIListLayout")
-	layout.FillDirection = Enum.FillDirection.Horizontal
-	layout.Padding = UDim.new(0, 6)
-	layout.SortOrder = Enum.SortOrder.LayoutOrder
-	layout.Parent = btnContainer
-	
-	local availableInteractions = table.create(4)
-	for _, inter in ipairs(self.Config.Interactions) do
-		if not inter.Condition or inter.Condition(self.TargetPlayer) then
-			table.insert(availableInteractions, inter)
-		end
-	end
-	
-	local num = #availableInteractions
-	if num == 0 then return end
-	
-	local btnWidth = math.floor((btnContainer.AbsoluteSize.X - ((num - 1) * 6)) / num)
-	if btnWidth <= 0 then btnWidth = 45 end
-	
-	for i, inter in ipairs(availableInteractions) do
-		local btn = Instance.new("TextButton")
-		btn.Size = UDim2.new(0, btnWidth, 1, 0)
-		btn.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-		btn.Text = string.format("%s %s", inter.Emoji or "", inter.Name)
-		btn.Font = Enum.Font.SourceSansSemibold
-		btn.TextSize = 12
-		btn.TextColor3 = self.Style.Text
-		btn.LayoutOrder = i
-		btn.Active = true
-		btn.Parent = btnContainer
-		
-		local corner = Instance.new("UICorner")
-		corner.CornerRadius = UDim.new(0, 5)
-		corner.Parent = btn
-		
-		local stroke = Instance.new("UIStroke")
-		stroke.Thickness = 1
-		stroke.Color = self.Style.Accent
-		stroke.Transparency = 0.8
-		stroke.Parent = btn
-		
-		btn.MouseEnter:Connect(function()
-			if self.CardFrame.GroupTransparency >= 0.95 then return end
-			TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(45, 45, 60)}):Play()
-			TweenService:Create(stroke, TweenInfo.new(0.15), {Transparency = 0.4}):Play()
-		end)
-		
-		btn.MouseLeave:Connect(function()
-			TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(30, 30, 40)}):Play()
-			TweenService:Create(stroke, TweenInfo.new(0.15), {Transparency = 0.8}):Play()
-		end)
-		
-		btn.MouseButton1Click:Connect(function()
-			if self.CardFrame.GroupTransparency >= 0.95 then return end
-			inter.Callback(self.TargetPlayer)
-		end)
-		
-		table.insert(self.Buttons, btn)
-	end
-end
+function ScannerInstance:CreateActionDock(head, targetPlayer)
+    local config = self.Config
+    local availableActions = {}
+    
+    for _, action in ipairs(config.Interactions) do
+        if not action.Condition or action.Condition(targetPlayer) == true then
+            table.insert(availableActions, action)
+        end
+    end
 
-function ScannerInstance:StartTracking()
-	local maxDist = self.IsLocal and (self.Config.LocalSetup.MaxUiVisibleDistance or 20) or (self.Style.MaxUiVisibleDistance or 80)
-	local startFade = self.IsLocal and (maxDist * 0.5) or (self.Style.Distance or 60)
-	
-	table.insert(self.Connections, RunService.Heartbeat:Connect(function()
-		local char = self.TargetPlayer.Character
-		local localChar = LocalPlayer.Character
-		
-		if not char or not char:FindFirstChild("Head") or not localChar or not localChar:FindFirstChild("Head") then
-			self.Gui.Enabled = false
-			return
-		end
-		
-		local targetPartName = "Head"
-		if self.IsLocal then
-			local pName = next(self.Config.LocalSetup.Offsets)
-			if pName and char:FindFirstChild(pName) then targetPartName = pName end
-		end
-		
-		local part = char:FindFirstChild(targetPartName)
-		if not part then self.Gui.Enabled = false return end
-		
-		-- РАСЧЕТ ДИСТАНЦИИ: Если проверяем себя, считаем расстояние от своей головы до КАМЕРЫ.
-		-- Если проверяем чужого игрока, считаем расстояние между головами.
-		local distance
-		if self.IsLocal then
-			distance = (Camera.CFrame.Position - part.Position).Magnitude
-		else
-			distance = (localChar.Head.Position - part.Position).Magnitude
-		end
-		
-		-- Скрытие по максимальной дистанции
-		if distance > maxDist then
-			self.Gui.Enabled = false
-			self.Gui.Active = false
-			self.CardFrame.Visible = false
-			return
-		end
-		
-		self.Gui.Adornee = part
-		if self.IsLocal then
-			local offset = self.Config.LocalSetup.Offsets[targetPartName] or Vector3.new(0, 2, 0)
-			self.Gui.StudsOffset = offset
-		else
-			self.Gui.StudsOffset = Vector3.new(0, 2.5, 0)
-		end
-		self.Gui.Enabled = true
-		
-		-- Расчет плавного изменения прозрачности (GroupTransparency)
-		if distance > startFade then
-			local alpha = (distance - startFade) / (maxDist - startFade)
-			self.CardFrame.GroupTransparency = math.clamp(alpha, 0, 1)
-		else
-			self.CardFrame.GroupTransparency = 0
-		end
-		
-		-- Управление блокировкой мыши (обработка наведения) и свойством Visible
-		if self.CardFrame.GroupTransparency >= 0.95 then
-			if self.Gui.Active then self.Gui.Active = false end
-			if self.CardFrame.Visible then self.CardFrame.Visible = false end
-		else
-			if not self.Gui.Active then self.Gui.Active = true end
-			if not self.CardFrame.Visible then self.CardFrame.Visible = true end
-		end
-	end))
+    if #availableActions == 0 then return end
+
+    local bgu = Instance.new("BillboardGui", self.Gui)
+    bgu.Adornee = head
+    bgu.StudsOffset = Vector3.new(0, 5.0, 0)
+    bgu.AlwaysOnTop = true
+    bgu.Active = true
+
+    local buttonWidth = 85
+    local spacing = 6
+    local totalWidth = (#availableActions * buttonWidth) + ((#availableActions - 1) * spacing) + 16
+    bgu.Size = UDim2.fromOffset(totalWidth, 40)
+
+    local mainFrame = Instance.new("Frame", bgu)
+    mainFrame.Size = UDim2.fromScale(1, 1)
+    mainFrame.BackgroundColor3 = config.Style.Bg
+    mainFrame.BackgroundTransparency = 0.25
+    Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 10)
+    
+    local stroke = Instance.new("UIStroke", mainFrame)
+    stroke.Color = config.Style.Accent
+    stroke.Thickness = 1.5
+    stroke.Transparency = 0.4
+
+    local list = Instance.new("UIListLayout", mainFrame)
+    list.FillDirection = Enum.FillDirection.Horizontal
+    list.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    list.VerticalAlignment = Enum.VerticalAlignment.Center
+    list.Padding = UDim.new(0, spacing)
+
+    local createdButtons = {}
+
+    for _, action in ipairs(availableActions) do
+        local btn = Instance.new("TextButton", mainFrame)
+        btn.Size = UDim2.fromOffset(buttonWidth, 28)
+        btn.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+        btn.BackgroundTransparency = 0.3
+        btn.Text = action.Emoji .. " " .. action.Name
+        btn.TextColor3 = config.Style.Text
+        btn.Font = Enum.Font.GothamBold
+        btn.TextSize = 10
+        btn.AutoButtonColor = false
+        
+        local btnCorner = Instance.new("UICorner", btn)
+        btnCorner.CornerRadius = UDim.new(0, 6)
+        
+        local btnStroke = Instance.new("UIStroke", btn)
+        btnStroke.Color = config.Style.Text
+        btnStroke.Thickness = 1
+        btnStroke.Transparency = 0.85
+
+        table.insert(self.Connections, btn.MouseEnter:Connect(function()
+            TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = config.Style.Accent, BackgroundTransparency = 0.1}):Play()
+            TweenService:Create(btnStroke, TweenInfo.new(0.2), {Transparency = 0.4}):Play()
+        end))
+
+        table.insert(self.Connections, btn.MouseLeave:Connect(function()
+            TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(30, 30, 40), BackgroundTransparency = 0.3}):Play()
+            TweenService:Create(btnStroke, TweenInfo.new(0.2), {Transparency = 0.85}):Play()
+        end))
+
+        table.insert(self.Connections, btn.MouseButton1Click:Connect(function()
+            action.Callback(targetPlayer)
+            self:Destroy()
+        end))
+
+        table.insert(createdButtons, {btn = btn, stroke = btnStroke})
+    end
+
+    -- Прозрачность кнопок действий по камере
+    table.insert(self.Connections, RunService.RenderStepped:Connect(function()
+        if not bgu.Parent or not workspace.CurrentCamera then return end
+        local camDist = (head.Position - workspace.CurrentCamera.CFrame.Position).Magnitude
+        
+        if camDist > config.Style.MaxUiVisibleDistance then
+            mainFrame.BackgroundTransparency = 1; stroke.Transparency = 1
+            for _, item in ipairs(createdButtons) do
+                item.btn.BackgroundTransparency = 1; item.btn.TextTransparency = 1; item.stroke.Transparency = 1
+            end
+        elseif camDist > (config.Style.MaxUiVisibleDistance - 15) then
+            local alpha = math.clamp((config.Style.MaxUiVisibleDistance - camDist) / 15, 0, 1)
+            mainFrame.BackgroundTransparency = 1 - (alpha * 0.75)
+            stroke.Transparency = 1 - (alpha * 0.6)
+            for _, item in ipairs(createdButtons) do
+                item.btn.BackgroundTransparency = 1 - (alpha * 0.7)
+                item.btn.TextTransparency = 1 - alpha
+                item.stroke.Transparency = 1 - (alpha * 0.15)
+            end
+        else
+            mainFrame.BackgroundTransparency = 0.25; stroke.Transparency = 0.4
+            for _, item in ipairs(createdButtons) do
+                local isHovering = (UserInputService:GetMouseLocation() - item.btn.AbsolutePosition).Magnitude < 30
+                if not isHovering then
+                    item.btn.BackgroundTransparency = 0.3; item.btn.TextTransparency = 0; item.stroke.Transparency = 0.85
+                end
+            end
+        end
+    end))
 end
 
 function ScannerInstance:Destroy()
-	for _, conn in ipairs(self.Connections) do if conn then conn:Disconnect() end end
-	for _, conn in ipairs(self.AttributeConnections) do if conn then conn:Disconnect() end end
-	if self.Gui then self.Gui:Destroy() end
-	table.clear(self.Buttons)
+    for _, conn in ipairs(self.Connections) do
+        if conn then conn:Disconnect() end
+    end
+    if self.Gui then self.Gui:Destroy() end
+    if activeTargetScanner == self then activeTargetScanner = nil end
+    if localPlayerScanner == self then localPlayerScanner = nil end
 end
 
--- [[ МЕТОДЫ ЭКСПОРТА МОДУЛЯ ]]
+
+-- [[ МЕТОДЫ ИНИЦИАЛИЗАЦИИ МОДУЛЯ ]]
+local clickConnection = nil
+
 function ObjectInteractionModule.Init(configTable)
-	ObjectInteractionModule.Stop()
-	
-	if LocalPlayer.Character then
-		localPlayerScanner = ScannerInstance.new(LocalPlayer, configTable, true)
-	end
-	
-	table.insert(ObjectInteractionModule.Connections, LocalPlayer.CharacterAdded:Connect(function()
-		task.wait(0.5)
-		if localPlayerScanner then localPlayerScanner:Destroy() end
-		localPlayerScanner = ScannerInstance.new(LocalPlayer, configTable, true)
-	end))
-	
-	ObjectInteractionModule.clickConnection = UserInputService.InputBegan:Connect(function(input, processed)
-		if processed then return end
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			local targetChar = nil
-			if Mouse.Target then
-				local c = Mouse.Target.Parent:FindFirstChild("Humanoid") and Mouse.Target.Parent or Mouse.Target.Parent.Parent
-				if c and c:FindFirstChild("Humanoid") then targetChar = c end
-			end
-			
-			if targetChar then
-				local p = Players:GetPlayerFromCharacter(targetChar)
-				if p then
-					if p == LocalPlayer then
-						if activeTargetScanner then activeTargetScanner:Destroy() end
-					else
-						if activeTargetScanner then activeTargetScanner:Destroy() end
-						activeTargetScanner = ScannerInstance.new(p, configTable, false)
-					end
-				end
-			else
-				if activeTargetScanner then activeTargetScanner:Destroy() end
-			end
-		end
-	end)
+    ObjectInteractionModule.Stop()
+
+    -- 1. Создаем постоянный сканер для Самого Себя (LocalPlayer)
+    if LocalPlayer.Character then
+        localPlayerScanner = ScannerInstance.new(LocalPlayer, configTable, true)
+    end
+
+    -- 2. Слушатель кликов по другим игрокам
+    clickConnection = UserInputService.InputBegan:Connect(function(input, proc)
+        if proc then return end 
+
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            local targetChar = nil
+            if Mouse.Target and Mouse.Target.Parent then
+                local c = Mouse.Target.Parent:FindFirstChild("Humanoid") and Mouse.Target.Parent or Mouse.Target.Parent.Parent
+                if c and c:FindFirstChild("Humanoid") then
+                    targetChar = c
+                end
+            end
+
+            if targetChar then
+                local p = Players:GetPlayerFromCharacter(targetChar)
+                if p then
+                    if p == LocalPlayer then
+                        if activeTargetScanner then activeTargetScanner:Destroy() end
+                    else
+                        if activeTargetScanner then activeTargetScanner:Destroy() end
+                        activeTargetScanner = ScannerInstance.new(p, configTable, false)
+                    end
+                end
+            else
+                if activeTargetScanner then
+                    activeTargetScanner:Destroy()
+                end
+            end
+        end
+    end)
 end
 
 function ObjectInteractionModule.RefreshLocal(configTable)
-	if localPlayerScanner then localPlayerScanner:Destroy() end
-	if LocalPlayer.Character then
-		localPlayerScanner = ScannerInstance.new(LocalPlayer, configTable, true)
-	end
+    if localPlayerScanner then
+        localPlayerScanner:Destroy()
+    end
+    if LocalPlayer.Character then
+        localPlayerScanner = ScannerInstance.new(LocalPlayer, configTable, true)
+    end
 end
 
 function ObjectInteractionModule.Stop()
-	if ObjectInteractionModule.clickConnection then
-		ObjectInteractionModule.clickConnection:Disconnect()
-		ObjectInteractionModule.clickConnection = nil
-	end
-	if ObjectInteractionModule.Connections then
-		for _, conn in ipairs(ObjectInteractionModule.Connections) do if conn then conn:Disconnect() end end
-		table.clear(ObjectInteractionModule.Connections)
-	else
-		ObjectInteractionModule.Connections = table.create(2)
-	end
-	if activeTargetScanner then activeTargetScanner:Destroy() activeTargetScanner = nil end
-	if localPlayerScanner then localPlayerScanner:Destroy() localPlayerScanner = nil end
+    if clickConnection then
+        clickConnection:Disconnect()
+        clickConnection = nil
+    end
+    if activeTargetScanner then activeTargetScanner:Destroy() end
+    if localPlayerScanner then localPlayerScanner:Destroy() end
 end
 
 return ObjectInteractionModule
