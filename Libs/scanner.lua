@@ -155,7 +155,7 @@ function ScannerInstance:CreateNumericCallout(part, data, targetPlayer)
     -- Эффекты Hover
     table.insert(self.Connections, clickBtn.MouseEnter:Connect(function()
         local camDist = (part.Position - workspace.CurrentCamera.CFrame.Position).Magnitude
-		if camDist > maxVisibleDist-15 then clickBtn.Active = false return else clickBtn.Active = true end
+		if camDist > maxVisibleDist-5 then clickBtn.Active = false return else clickBtn.Active = true end
         TweenService:Create(stroke, TweenInfo.new(0.15), {
             Thickness = 2.5,
             Color = data.Color:Lerp(Color3.new(1, 1, 1), 0.25)
@@ -165,7 +165,7 @@ function ScannerInstance:CreateNumericCallout(part, data, targetPlayer)
 
     table.insert(self.Connections, clickBtn.MouseLeave:Connect(function()
         local camDist = (part.Position - workspace.CurrentCamera.CFrame.Position).Magnitude
-		if camDist > maxVisibleDist-15 then clickBtn.Active = false return else clickBtn.Active = true end
+		if camDist > maxVisibleDist-5 then clickBtn.Active = false return else clickBtn.Active = true end
         TweenService:Create(stroke, TweenInfo.new(0.15), {
             Thickness = 1.5,
             Color = data.Color
@@ -194,7 +194,7 @@ function ScannerInstance:CreateNumericCallout(part, data, targetPlayer)
     -- Копирование значения по клику
     table.insert(self.Connections, clickBtn.MouseButton1Click:Connect(function()
 		local camDist = (part.Position - workspace.CurrentCamera.CFrame.Position).Magnitude
-		if camDist > maxVisibleDist-15 then clickBtn.Active = false return else clickBtn.Active = true end
+		if camDist > maxVisibleDist-5 then clickBtn.Active = false return else clickBtn.Active = true end
         local copied = Utils.CopyToClipboard(valueLabel.Text)
         
         if copied then
