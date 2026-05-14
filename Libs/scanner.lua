@@ -137,7 +137,13 @@ function ScannerInstance:CreateNumericCallout(part, data, targetPlayer)
     clickBtn.Text = ""
     clickBtn.ZIndex = 5
 
-    -- Форматирование внешней функцией
+    -- Определение дистанции затухания камеры (Индивидуально для себя / для других)
+    local maxVisibleDist = config.Style.MaxUiVisibleDistance
+    if self.IsLocal and config.LocalSetup and config.LocalSetup.MaxUiVisibleDistance then
+        maxVisibleDist = config.LocalSetup.MaxUiVisibleDistance
+    end
+    
+	-- Форматирование внешней функцией
     local function updateValue()
         local rawValue = targetPlayer:GetAttribute(data.Attr) or 0
 		valueLabel.Text = conv.ToLetters(rawValue)
@@ -148,6 +154,8 @@ function ScannerInstance:CreateNumericCallout(part, data, targetPlayer)
 
     -- Эффекты Hover
     table.insert(self.Connections, clickBtn.MouseEnter:Connect(function()
+        local camDist = (part.Position - workspace.CurrentCamera.CFrame.Position).Magnitude
+		if camDist > maxVisibleDist-15 then clickBtn.Active = false return else clickBtn.Active = true end
         TweenService:Create(stroke, TweenInfo.new(0.15), {
             Thickness = 2.5,
             Color = data.Color:Lerp(Color3.new(1, 1, 1), 0.25)
@@ -156,18 +164,14 @@ function ScannerInstance:CreateNumericCallout(part, data, targetPlayer)
     end))
 
     table.insert(self.Connections, clickBtn.MouseLeave:Connect(function()
+        local camDist = (part.Position - workspace.CurrentCamera.CFrame.Position).Magnitude
+		if camDist > maxVisibleDist-15 then clickBtn.Active = false return else clickBtn.Active = true end
         TweenService:Create(stroke, TweenInfo.new(0.15), {
             Thickness = 1.5,
             Color = data.Color
         }):Play()
         TweenService:Create(f, TweenInfo.new(0.15), {BackgroundTransparency = 0.2}):Play()
     end))
-
-    -- Определение дистанции затухания камеры (Индивидуально для себя / для других)
-    local maxVisibleDist = config.Style.MaxUiVisibleDistance
-    if self.IsLocal and config.LocalSetup and config.LocalSetup.MaxUiVisibleDistance then
-        maxVisibleDist = config.LocalSetup.MaxUiVisibleDistance
-    end
 
     -- Плавное затухание по дистанции камеры
     table.insert(self.Connections, RunService.RenderStepped:Connect(function()
@@ -189,6 +193,8 @@ function ScannerInstance:CreateNumericCallout(part, data, targetPlayer)
 
     -- Копирование значения по клику
     table.insert(self.Connections, clickBtn.MouseButton1Click:Connect(function()
+		local camDist = (part.Position - workspace.CurrentCamera.CFrame.Position).Magnitude
+		if camDist > maxVisibleDist-15 then clickBtn.Active = false return else clickBtn.Active = true end
         local copied = Utils.CopyToClipboard(valueLabel.Text)
         
         if copied then
