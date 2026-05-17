@@ -1,3 +1,5 @@
+while not game.IsLoaded do task.wait() end
+task.wait(1)
 local msg = loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Libs/notify.lua"))()
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
