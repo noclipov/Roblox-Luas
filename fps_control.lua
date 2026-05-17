@@ -1,4 +1,6 @@
 -- loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/fps_control.lua"))()
+while not game.IsLoaded do task.wait() end
+task.wait(1)
 local LINK = "https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/fps_control.lua"
 if not isrbxactive or not setfpscap then msg.Mini("Coral", "Your executor rlly sucks", 0.1); return end
 local maxfps
