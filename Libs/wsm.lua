@@ -100,13 +100,13 @@ end
 function WebSocketManager:_connect()
 	if self.isConnected or self.isConnecting or self.isManuallyClosed then return end
 	self.isConnecting = true
-	local success, res = pcall(function()
+	local success, ws = pcall(function()
 		return (syn and syn.websocket or WebSocket).connect(self.url)
 	end)
 	self.isConnecting = false
 
 	if success then
-		self.socket = res
+		self.socket = ws
 		self.isConnected = true
 		self.isIdleClosed = false
 		if not self.sessionStartTime then
@@ -272,3 +272,4 @@ function WebSocketManager:_flushQueue()
 		end
 	end
 end
+return WebSocketManager
