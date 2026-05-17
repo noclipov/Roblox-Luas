@@ -110,15 +110,18 @@ end
 Library.toggle_coregui = function(coregui, state)
 	game.StarterGui:SetCoreGuiEnabled(coregui, state)
 end
-Library.ss = function()
+Library.simple_spy = function()
     msg.Mini("Purple", "Simple Spy: Loading", 2)
     loadstring(game:HttpGetAsync("https://raw.githubusercontent.com/78n/SimpleSpy/main/SimpleSpySource.lua"))()
 end
-Library.dd = function()
-    msg.Mini("Purple", "Dark Dex: Loading", 5)
+Library.dex_explorer = function()
+    msg.Mini("Purple", "Dex Explorer: Loading", 5)
     loadstring(game:HttpGet("https://github.com/AZYsGithub/DexPlusPlus/releases/latest/download/out.lua"))()
 end
-Library.aa = function()
+Library.anti_afk = function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Anti-AFK.lua"))()
+end
+Library.fps_control = function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Anti-AFK.lua"))()
 end
 
@@ -140,6 +143,10 @@ local alias_list = {
 	["chat"] = {"Chat","message","send_message", "Message", "SendMessage", "sendMessage"},
 	["chat_filter"] = {"filter","ChatFilter","chatFilter", "chatfilter"},
 	["toggle_coregui"] = {"toggleCG","toggleCoreGui","CoreGui", "coregui"},
+	["simple_spy"] = {"simpleSpy","SimpleSpy","simplespy", "ss"},
+	["dex_explorer"] = {"dexExplorer","DexExplorer","dexexplorer", "de"},
+	["anti_afk"] = {"antiAFK","AntiAFK","antiafk", "afk"},
+	["fps_control"] = {"fpsControl","FPSControl","fpscontrol", "fpsc"},
 }
 
 for src, aliases in pairs(alias_list) do
