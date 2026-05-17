@@ -119,7 +119,7 @@ function WebSocketManager:_connect()
 		-- end)
 		msg.Mini("Mint", "[WS] Соединение успешно установлено!", 1.5)
 		self:_startIdleTracker()
-		task.spawn(self:_flushQueue)
+		task.spawn(function() self:_flushQueue() end)
 
 		if ws.OnClose then
 			local connected = pcall(function()
@@ -143,9 +143,6 @@ function WebSocketManager:_connect()
 		if not self.isManuallyClosed and not self.isIdleClosed then
 			self:_connect()
 		end
-	end
-	else
-		warn("[WS] Не удалось подключиться: " .. tostring(res))
 	end
 end
 
@@ -275,5 +272,3 @@ function WebSocketManager:_flushQueue()
 		end
 	end
 end
-
-return WebSocketManager
