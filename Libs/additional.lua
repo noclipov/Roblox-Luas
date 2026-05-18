@@ -91,7 +91,7 @@ end
 Library.chat = function(text)
 	ChatService.TextChannels.RBXGeneral:SendAsync(text)
 end
-Library.chatFilter = function(callback, isfilter)
+Library.chat_filter = function(callback, isfilter)
     if ChatService and ChatService.ChatVersion == Enum.ChatVersion.TextChatService then 
 		if isfilter then
 			ChatService.OnIncomingMessage = function(textMessage)

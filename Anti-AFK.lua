@@ -1,7 +1,6 @@
 -- loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Anti-AFK.lua"))()
-local LINK = "https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Anti-AFK.lua"
 while not game.IsLoaded do task.wait() end
-task.wait(1)
+local LINK = "https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Anti-AFK.lua"
 if not _G.AntiAfkLoaded then
 	local gcn = getconnections or get_signal_cons
 	if gcn then
