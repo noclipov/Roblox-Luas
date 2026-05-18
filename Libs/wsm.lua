@@ -55,12 +55,7 @@ end
 function WebSocketManager:_setupLeaveListeners()
 	-- Если игрок отключается от сервера (включая телепортацию в другой плейс)
 	local leaveConn = Players.PlayerRemoving:Connect(function(player)
-		local isTarget = false
-		if RunService:IsClient() then
-			isTarget = (player == Players.LocalPlayer)
-		end
-
-		if isTarget then
+		if player == Players.LocalPlayer then
 			self:Stop()
 		end
 	end)
