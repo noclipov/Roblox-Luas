@@ -226,7 +226,7 @@ function WebSocketManager:Stop()
 			status = "disconnected",
 		})
 		task.wait(0.1) 
-		
+		self:_shutdownSocket()
 		for _, conn in ipairs(self._cleanupConnections) do
 			if conn then
 				pcall(function() conn:Disconnect() end)
@@ -234,7 +234,6 @@ function WebSocketManager:Stop()
 		end
 		table.clear(self._cleanupConnections)
 		table.clear(self.queue)
-		self:_shutdownSocket()
 		self.isManuallyClosed = true
 		self.isConnecting = false
 		self.isConnected = false
