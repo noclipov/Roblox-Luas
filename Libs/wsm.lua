@@ -3,6 +3,7 @@ local msg = loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanocli
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local GuiService = game:GetService("GuiService")
 
 local WebSocketManager = {}
 WebSocketManager.__index = WebSocketManager
@@ -25,6 +26,17 @@ local function getClientIdentifier()
 end
 
 function WebSocketManager.new(url: string, idleTimeout: number?)
+	-- Проверяем, существует ли уже запущенный менеджер в глобальной среде эксплойта
+	local sharedEnv = getgenv and getgenv() or _G
+	if sharedEnv.__ActiveWebSocketManager then
+		pcall(function()
+			-- Жестко закрываем старый сокет предыдущего запуска скрипта
+			sharedEnv.__ActiveWebSocketManager:Stop()
+		end)
+		sharedEnv.__ActiveWebSocketManager = nil
+		task.wait(0.2) -- Короткая пауза, чтобы порт гарантированно освободился
+	end
+
 	local self = setmetatable({}, WebSocketManager)
 	
 	local cleanUrl = url:gsub("^https?://", "ws://")
@@ -44,25 +56,42 @@ function WebSocketManager.new(url: string, idleTimeout: number?)
 
 	self.queue = {}
 	self._cleanupConnections = {}
+	
 	self:_setupLeaveListeners()
-
 	self.sessionStartTime = os.time()
+	
+	-- Сохраняем текущий инстанс, чтобы следующий запуск его «выбил»
+	sharedEnv.__ActiveWebSocketManager = self
 	
 	return self
 end
 
--- Настройка автоматического закрытия при выходе игрока
 function WebSocketManager:_setupLeaveListeners()
-	-- Если игрок отключается от сервера (включая телепортацию в другой плейс)
 	local leaveConn = Players.PlayerRemoving:Connect(function(player)
 		if player == Players.LocalPlayer then
 			self:Stop()
 		end
 	end)
 	table.insert(self._cleanupConnections, leaveConn)
+
+	local errorConn = GuiService.ErrorMessageChanged:Connect(function(errorMessage, errorType)
+		if errorMessage and errorMessage ~= "" then
+			pcall(function()
+				if self.isConnected and self.socket then
+					self:Send({
+						status = "disconnected",
+						reason = "game_error_or_kick",
+						details = errorMessage
+					})
+					task.wait(0.05)
+				end
+			end)
+			self:Stop()
+		end
+	end)
+	table.insert(self._cleanupConnections, errorConn)
 end
 
--- Внутренний поток мониторинга активности (таймаут)
 function WebSocketManager:_startIdleTracker()
 	if self.idleTrackerActive then return end
 	self.idleTrackerActive = true
@@ -70,7 +99,7 @@ function WebSocketManager:_startIdleTracker()
 	task.spawn(function()
 		while self.isConnected and not self.isManuallyClosed do
 			task.wait(1)
-			local elapsed = os.time() - self.lastActivityTime
+			local elapsed = os.time() - (self.lastActivity or os.time())
 			if elapsed >= self.idleTimeout then
 				msg.New("Coral", "WebSocketManager", "Соединение простаивает более " .. self.idleTimeout .. " сек. Переход в спящий режим...", 3)
 				self.isIdleClosed = true
@@ -82,7 +111,6 @@ function WebSocketManager:_startIdleTracker()
 	end)
 end
 
--- Внутренний метод физического закрытия сокета
 function WebSocketManager:_shutdownSocket()
 	self.isConnected = false
 	if self.socket then
@@ -94,25 +122,33 @@ function WebSocketManager:_shutdownSocket()
 end
 
 function WebSocketManager:_connect()
-	if self.isConnected or self.isConnecting or self.isManuallyClosed then return end
+	if self.isManuallyClosed then return end
+	if self.isConnecting then return end
+
+	if self.isConnected or self.socket then
+		self:_shutdownSocket()
+	end
+
 	self.isConnecting = true
 	local success, ws = pcall(function()
 		return (syn and syn.websocket or WebSocket).connect(self.url)
 	end)
 	self.isConnecting = false
 
-	if success then
+	if success and ws then
 		self.socket = ws
 		self.isConnected = true
 		self.isIdleClosed = false
 		if not self.sessionStartTime then
 			self.sessionStartTime = os.time()
 		end
-		self:Send({status = "connected"})
-		-- self.socket.OnMessage:Connect(function(message)
-		-- 	self.lastActivity = os.time()
-		-- 	-- Тут можно добавить обработку входящих сообщений
-		-- end)
+		self.lastActivity = os.time()
+
+		-- Базовый пакет успешного подключения
+		self:Send({
+			status = "connected"
+		})
+
 		msg.Mini("Mint", "[WS] Соединение успешно установлено!", 1.5)
 		self:_startIdleTracker()
 		task.spawn(function() self:_flushQueue() end)
@@ -126,15 +162,20 @@ function WebSocketManager:_connect()
 			if not connected then
 				pcall(function()
 					ws.OnClose = function()
-						self:_handleDisconnect()
+						if self.socket == ws then
+							self:_handleDisconnect()
+						end
 					end
 				end)
 			end
 		end
 	else
+		self.isConnected = false
 		if self.isManuallyClosed or self.isIdleClosed then return end
+		
 		local errorMsg = tostring(ws or "Unknown Error")
 		warn("[WS] Ошибка соединения (" .. errorMsg .. "). Повторная попытка через 5 секунд...")
+		
 		task.wait(5)
 		if not self.isManuallyClosed and not self.isIdleClosed then
 			self:_connect()
@@ -142,14 +183,11 @@ function WebSocketManager:_connect()
 	end
 end
 
--- Обработчик разрыва связи
 function WebSocketManager:_handleDisconnect()
 	self.isConnected = false
 	self.socket = nil
 	
-	if self.isManuallyClosed or self.isIdleClosed then
-		return
-	end
+	if self.isManuallyClosed or self.isIdleClosed then return end
 	
 	msg.New("Coral", "WebSocketManager", "Соединение потеряно! Автореконнект через 5 секунд...", 5)
 	task.wait(5)
@@ -168,12 +206,11 @@ end
 
 function WebSocketManager:Send(customData)
 	if self.isManuallyClosed then return end
-	self.lastActivityTime = os.time()
+	self.lastActivity = os.time()
+	
 	if self.isIdleClosed and not self.isConnected and not self.isConnecting then
 		self.isIdleClosed = false
-		task.spawn(function()
-			self:_connect()
-		end)
+		task.spawn(function() self:_connect() end)
 	end
 
 	local packet = {
@@ -204,13 +241,12 @@ function WebSocketManager:Send(customData)
 		return
 	end
 	
-	-- 3. Безопасная отправка или удержание в очереди
 	if self.isConnected and self.socket then
 		local sendSuccess, sendErr = pcall(function()
 			self.socket:Send(payload)
 		end)
 		if not sendSuccess then
-			warn("[WS ERROR] Ошибка отправки. Пакет помещен в буфер: " .. tostring(sendErr))
+			warn("[WS ERROR] Ошибка отправки. Буферизация: " .. tostring(sendErr))
 			self.isConnected = false
 			table.insert(self.queue, payload)
 			task.spawn(function() self:_handleDisconnect() end)
@@ -221,42 +257,43 @@ function WebSocketManager:Send(customData)
 end
 
 function WebSocketManager:Stop()
-	if self.isConnected and self.socket then
-		self:Send({
-			status = "disconnected",
-		})
-		task.wait(0.1) 
-		self:_shutdownSocket()
-		for _, conn in ipairs(self._cleanupConnections) do
-			if conn then
-				pcall(function() conn:Disconnect() end)
-			end
+	pcall(function()
+		if self.isConnected and self.socket then
+			self:Send({ status = "disconnected" })
+			task.wait(0.05)
 		end
-		table.clear(self._cleanupConnections)
-		table.clear(self.queue)
-		self.isManuallyClosed = true
-		self.isConnecting = false
-		self.isConnected = false
-		self.isIdleClosed = false
-		self.sessionStartTime = nil
+	end)
+	
+	self:_shutdownSocket()
+	
+	for _, conn in ipairs(self._cleanupConnections) do
+		if conn then pcall(function() conn:Disconnect() end) end
+	end
+	table.clear(self._cleanupConnections)
+	table.clear(self.queue)
+	
+	self.isManuallyClosed = true
+	self.isConnecting = false
+	self.isConnected = false
+	self.isIdleClosed = false
+	self.sessionStartTime = nil
+	
+	local sharedEnv = getgenv and getgenv() or _G
+	if sharedEnv.__ActiveWebSocketManager == self then
+		sharedEnv.__ActiveWebSocketManager = nil
 	end
 end
 
 function WebSocketManager:_flushQueue()
 	if #self.queue == 0 then return end
-	-- print("[WS] Отправка сохраненных пакетов из буфера: " .. #self.queue)
 	
 	local tempQueue = {}
-	for _, payload in ipairs(self.queue) do
-		table.insert(tempQueue, payload)
-	end
+	for _, payload in ipairs(self.queue) do table.insert(tempQueue, payload) end
 	table.clear(self.queue)
 	
 	for _, payload in ipairs(tempQueue) do
 		if self.isConnected and self.socket then
-			local sendSuccess = pcall(function()
-				self.socket:Send(payload)
-			end)
+			local sendSuccess = pcall(function() self.socket:Send(payload) end)
 			if not sendSuccess then
 				table.insert(self.queue, payload)
 				self.isConnected = false
@@ -267,4 +304,5 @@ function WebSocketManager:_flushQueue()
 		end
 	end
 end
+
 return WebSocketManager
