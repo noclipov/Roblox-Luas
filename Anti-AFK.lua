@@ -20,6 +20,6 @@ if not _G.AntiAfkLoaded then
 		VirtualUser:ClickButton2(Vector2.new())
 	end)
 	_G.AntiAfkLoaded = true
-	queue_on_teleport('_G.AntiAfkLoaded = false; task.wait(0.2); loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Anti-AFK.lua"))()')
+	queue_on_teleport('_G.AntiAfkLoaded = false; task.wait(0.2); loadstring(game:HttpGet("'..LINK..'"))()')
 	loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Libs/notify.lua"))().Mini("Purple", "Anti-AFK: Loaded", 2)
 end
