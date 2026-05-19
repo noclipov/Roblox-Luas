@@ -7,15 +7,17 @@ if getfpscap then maxfps = getfpscap() else maxfps = 120 end
 if not _G.FPSControlLoaded then
 	_G.FPSControlLoaded = true
 	local last_state
-	while true do task.wait()
-		local new_state = isrbxactive()
-		if new_state ~= last_state then
-			last_state = new_state
-			task.wait(not new_state and 5 or 0.1)
-			setfpscap(new_state and maxfps or 5)
+	local fpsthread = task.spawn(function()
+		while _G.FPSControlLoaded do task.wait()
+			local new_state = isrbxactive()
+			if new_state ~= last_state then
+				last_state = new_state
+				task.wait(not new_state and 5 or 0.1)
+				setfpscap(new_state and maxfps or 5)
+			end
 		end
-	end
-	game.Players.PlayerRemoving:Connect(function(ply) if ply == game.Players.LocalPlayer then setfpscap(maxfps) end end)
+	end)
+	game.Players.PlayerRemoving:Connect(function(ply) _G.FPSControlLoaded = false; task.cancel(fpsthread) ;if ply == game.Players.LocalPlayer then setfpscap(maxfps) end end)
 	queue_on_teleport('_G.FPSControlLoaded = false; task.wait(0.2); loadstring(game:HttpGet("'..LINK..'"))()')
 	loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Libs/notify.lua"))().Mini("Purple", "FPS-Control: Loaded", 2)
 end
