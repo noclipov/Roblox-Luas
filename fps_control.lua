@@ -1,9 +1,8 @@
 -- loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/fps_control.lua"))()
 while not game.IsLoaded do task.wait() end
 local LINK = "https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/fps_control.lua"
-if not isrbxactive or not setfpscap then msg.Mini("Coral", "Your executor rlly sucks", 0); return end
-local maxfps
-if getfpscap then maxfps = getfpscap() else maxfps = 120 end
+if not isrbxactive or not setfpscap or not getfpscap then msg.Mini("Coral", "Your executor rlly sucks", 0); return end
+local maxfps = getfpscap and getfpscap() or 120
 if not _G.FPSControlLoaded then
 	_G.FPSControlLoaded = true
 	local last_state
