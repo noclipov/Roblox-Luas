@@ -12,7 +12,7 @@ if not _G.FPSControlLoaded then
 			if new_state ~= last_state then
 				last_state = new_state
 				task.wait(not new_state and 5 or 0.1)
-				setfpscap(new_state and maxfps or 15)
+				setfpscap(new_state and maxfps or 5)
 			end
 		end
 	end)
