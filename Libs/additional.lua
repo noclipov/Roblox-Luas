@@ -7,14 +7,14 @@ local lp = pls.LocalPlayer
 Library.Link = "https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Libs/additional.lua"
 -- loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Libs/additional.lua"))()
 Library.dist_to = function(pos)
-    if not pos then return end
+    if not pos or not lp.Character or not lp.Character.PrimaryPart then return end
     if typeof(pos) == 'Vector3' then pos = pos
     elseif typeof(pos) == 'Instance' then
         if pos:IsA('Part') or pos:IsA('MeshPart') then pos = pos.Position
         elseif pos:IsA('Model') then pos = pos.PrimaryPart.Position
         elseif pos:IsA('Player') then pos = pos.Character.PrimaryPart.Position end
     end
-    return math.floor(((game.Players.LocalPlayer.Character.HumanoidRootPart).Position - pos).magnitude) or 0
+    return math.floor(((game.Players.LocalPlayer.Character.PrimaryPart).Position - pos).magnitude) or 0
 end
 Library.is_moving = function(humanoid)
     if not humanoid then return false end
