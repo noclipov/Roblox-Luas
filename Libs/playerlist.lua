@@ -5,9 +5,9 @@ while not game.IsLoaded do task.wait() end
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
+local CoreGui = game:GetService("CoreGui") -- Добавили сервис CoreGui
 
 local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 local PlayerListModule = {}
 
@@ -74,7 +74,7 @@ function PlayerListUI.new(interactionsTable, side, toggleKey)
 	sg.ResetOnSpawn = false
 	sg.DisplayOrder = 998
 	sg.IgnoreGuiInset = true
-	sg.Parent = PlayerGui
+	sg.Parent = CoreGui -- ПЕРЕНЕСЕНО СЮДА (Вместо PlayerGui)
 	self.Gui = sg
 
 	-- Круглая кнопка вызова меню
@@ -164,7 +164,6 @@ end
 -- [3. ДИНАМИЧЕСКАЯ ОРИЕНТАЦИЯ ВИДИМОСТИ]
 -- ==========================================
 function PlayerListUI:UpdateVisibilityBasedOnPlayers()
-	-- Считаем количество игроков на сервере (без учёта LocalPlayer)
 	local actualPlayersCount = 0
 	for _, player in ipairs(Players:GetPlayers()) do
 		if player ~= LocalPlayer then
@@ -173,14 +172,12 @@ function PlayerListUI:UpdateVisibilityBasedOnPlayers()
 	end
 
 	if actualPlayersCount == 0 then
-		-- Если на сервере никого нет, полностью принудительно скрываем UI элементы
 		if self.IsOpen then
-			self:Toggle() -- Принудительно закрываем слайд-панель
+			self:Toggle()
 		end
 		self.ToggleBtn.Visible = false
 		self.Frame.Visible = false
 	else
-		-- Если появляется хотя бы один игрок, возвращаем видимость кнопки вызова
 		self.ToggleBtn.Visible = true
 		self.Frame.Visible = true
 	end
@@ -190,7 +187,6 @@ end
 -- [4. УПРАВЛЕНИЕ АНИМАЦИЕЙ И ОБНОВЛЕНИЕМ]
 -- ==========================================
 function PlayerListUI:Toggle()
-	-- Запрещаем открытие, если на сервере нет других игроков
 	if not self.ToggleBtn.Visible then return end
 	
 	self.IsOpen = not self.IsOpen
@@ -235,7 +231,6 @@ function PlayerListUI:RefreshList()
 			nameLbl.ZIndex = 5
 			nameLbl.Parent = card
 
-			-- Добавление кнопок взаимодействия (Interactions)
 			local rightOffset = -8
 			for _, interact in ipairs(self.Interactions) do
 				if not interact.Condition or interact.Condition(player) then
@@ -264,23 +259,22 @@ function PlayerListUI:RefreshList()
 			end
 		end
 	end
-	self.Scroll.CanvasSize = UDim2.new(0, 0, 0, self.Scroll.UIListLayout.AbsoluteContentSize.Y)
+	if self.Scroll:FindFirstChildOfClass("UIListLayout") then
+		self.Scroll.CanvasSize = UDim2.new(0, 0, 0, self.Scroll.UIListLayout.AbsoluteContentSize.Y)
+	end
 end
 
 -- ==========================================
 -- [5. ЖИЗНЕННЫЙ ЦИКЛ И СОБЫТИЯ]
 -- ==========================================
 function PlayerListUI:Init()
-	-- Первоначальная проверка видимости меню при запуске скрипта
 	self:UpdateVisibilityBasedOnPlayers()
 	self:RefreshList()
 
-	-- Обработка нажатия на круглую кнопку вызова
 	table.insert(self.Connections, self.ToggleBtn.MouseButton1Click:Connect(function()
 		self:Toggle()
 	end))
 
-	-- Горячая клавиша вызова (использует установленный бинд)
 	table.insert(self.Connections, UserInputService.InputBegan:Connect(function(input, proc)
 		if proc then return end
 		if input.KeyCode == self.ToggleKey then
@@ -288,7 +282,6 @@ function PlayerListUI:Init()
 		end
 	end))
 
-	-- Авто-обновление списка и динамическая проверка видимости при движении игроков
 	table.insert(self.Connections, Players.PlayerAdded:Connect(function()
 		task.wait(0.5)
 		self:UpdateVisibilityBasedOnPlayers()

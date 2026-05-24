@@ -3,9 +3,10 @@ local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
+-- ИЗМЕНЕНИЕ: Подключаем CoreGui вместо PlayerGui для скрытия интерфейса
+local CoreGui = game:GetService("CoreGui")
 
 local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local Mouse = LocalPlayer:GetMouse()
 
 local conv = loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Libs/convs.lua"))()
@@ -38,8 +39,20 @@ function ScannerInstance.new(targetPlayer, config, isLocalPlayer)
     self.Target = targetPlayer
     self.Config = config
     self.IsLocal = isLocalPlayer or false
-    self.Gui = Instance.new("ScreenGui", PlayerGui)
-    self.Gui.Name = isLocalPlayer and "LocalNumericScanner" or "NumericScanner"
+    
+    -- ИЗМЕНЕНИЕ: Безопасное создание ScreenGui внутри CoreGui с обработкой ошибок доступа
+    local success, gui = pcall(function()
+        local sgui = Instance.new("ScreenGui", CoreGui)
+        sgui.Name = isLocalPlayer and "LocalNumericScanner" or "NumericScanner"
+        return sgui
+    end)
+    
+    if not success or not gui then
+        warn("Сбой доступа к CoreGui. Убедитесь, что ваш эксплоит поддерживает работу с CoreGui.")
+        return nil
+    end
+    
+    self.Gui = gui
     self.Connections = {}
     
     local targetChar = targetPlayer.Character
@@ -92,14 +105,14 @@ function ScannerInstance:CreateNumericCallout(part, data, targetPlayer)
     local bgu = Instance.new("BillboardGui", self.Gui)
     bgu.Adornee = part
     bgu.AlwaysOnTop = true
-    bgu.Active = true
+    bgu.Active = false -- Пропускаем ПКМ и Колёсико
     bgu.Size = UDim2.fromOffset(100, 45)
 
     -- Проверяем кастомные настройки смещения (Offsets) для локального игрока
     if self.IsLocal and config.LocalSetup and config.LocalSetup.Offsets and config.LocalSetup.Offsets[part.Name] then
         bgu.StudsOffset = config.LocalSetup.Offsets[part.Name]
     else
-        bgu.StudsOffset = data.Offset -- Обычный оффсет для остальных игроков
+        bgu.StudsOffset = data.Offset 
     end
 
     local f = Instance.new("Frame", bgu)
@@ -137,17 +150,16 @@ function ScannerInstance:CreateNumericCallout(part, data, targetPlayer)
     clickBtn.BackgroundTransparency = 1
     clickBtn.Text = ""
     clickBtn.ZIndex = 5
+    clickBtn.Active = false -- Пропускаем ПКМ и Колёсико
 
-    -- Определение дистанции затухания камеры (Индивидуально для себя / для других)
     local maxVisibleDist = config.Style.MaxUiVisibleDistance
     if self.IsLocal and config.LocalSetup and config.LocalSetup.MaxUiVisibleDistance then
         maxVisibleDist = config.LocalSetup.MaxUiVisibleDistance
     end
     
-	-- Форматирование внешней функцией
     local function updateValue()
         local rawValue = targetPlayer:GetAttribute(data.Attr) or 0
-		valueLabel.Text = conv.ToLetters(rawValue)
+        valueLabel.Text = conv.ToLetters(rawValue)
         
         valueLabel.TextSize = 18
         TweenService:Create(valueLabel, TweenInfo.new(0.3), {TextSize = 14}):Play()
@@ -156,7 +168,7 @@ function ScannerInstance:CreateNumericCallout(part, data, targetPlayer)
     -- Эффекты Hover
     table.insert(self.Connections, clickBtn.MouseEnter:Connect(function()
         local camDist = (part.Position - workspace.CurrentCamera.CFrame.Position).Magnitude
-		if camDist > maxVisibleDist-5 then clickBtn.Active = false return else clickBtn.Active = true end
+        if camDist > maxVisibleDist-5 then return end
         TweenService:Create(stroke, TweenInfo.new(0.15), {
             Thickness = 2.5,
             Color = data.Color:Lerp(Color3.new(1, 1, 1), 0.25)
@@ -166,7 +178,7 @@ function ScannerInstance:CreateNumericCallout(part, data, targetPlayer)
 
     table.insert(self.Connections, clickBtn.MouseLeave:Connect(function()
         local camDist = (part.Position - workspace.CurrentCamera.CFrame.Position).Magnitude
-		if camDist > maxVisibleDist-5 then clickBtn.Active = false return else clickBtn.Active = true end
+        if camDist > maxVisibleDist-5 then return end
         TweenService:Create(stroke, TweenInfo.new(0.15), {
             Thickness = 1.5,
             Color = data.Color
@@ -194,15 +206,15 @@ function ScannerInstance:CreateNumericCallout(part, data, targetPlayer)
 
     -- Копирование значения по клику
     table.insert(self.Connections, clickBtn.MouseButton1Click:Connect(function()
-		local camDist = (part.Position - workspace.CurrentCamera.CFrame.Position).Magnitude
-		if camDist > maxVisibleDist-5 then clickBtn.Active = false return else clickBtn.Active = true end
+        local camDist = (part.Position - workspace.CurrentCamera.CFrame.Position).Magnitude
+        if camDist > maxVisibleDist-5 then return end
         local copied = Utils.CopyToClipboard(valueLabel.Text)
         
         if copied then
             msg.Mini("Mint", ("%s скопировано в буфер!"):format(valueLabel.Text), 3)
         else
             msg.Mini("Coral", "Ошибка доступа к буферу обмена", 3)
-		end
+        end
 
         local originalColor = stroke.Color
         TweenService:Create(stroke, TweenInfo.new(0.08), {Color = config.Style.Success, Thickness = 3}):Play()
@@ -233,7 +245,7 @@ function ScannerInstance:CreateActionDock(head, targetPlayer)
     bgu.Adornee = head
     bgu.StudsOffset = Vector3.new(0, 5.0, 0)
     bgu.AlwaysOnTop = true
-    bgu.Active = true
+    bgu.Active = false -- Пропускаем ПКМ и Колёсико
 
     local buttonWidth = 85
     local spacing = 6
@@ -269,6 +281,7 @@ function ScannerInstance:CreateActionDock(head, targetPlayer)
         btn.Font = Enum.Font.GothamBold
         btn.TextSize = 10
         btn.AutoButtonColor = false
+        btn.Active = false -- Пропускаем ПКМ и Колёсико
         
         local btnCorner = Instance.new("UICorner", btn)
         btnCorner.CornerRadius = UDim.new(0, 6)

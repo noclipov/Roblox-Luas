@@ -4,6 +4,7 @@ while not game.IsLoaded do task.wait() end
 -- ==========================================
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui") -- Добавили сервис CoreGui
 
 local Notify = {}
 
@@ -72,11 +73,10 @@ local function resolveTheme(customOrPreset)
 end
 
 local function getContainer()
-	local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
-	local sg = playerGui:FindFirstChild("Noclipov_UI_Storage")
+	local sg = CoreGui:FindFirstChild("Noclipov_UI_Storage") -- Ищем в CoreGui вместо PlayerGui
 	
 	if not sg then
-		sg = Instance.new("ScreenGui", playerGui)
+		sg = Instance.new("ScreenGui", CoreGui) -- Родителем делаем CoreGui
 		sg.Name = "Noclipov_UI_Storage"
 		sg.ResetOnSpawn = false
 		sg.DisplayOrder = 999
