@@ -77,7 +77,7 @@ function WebSocketManager:_setupLeaveListeners()
 	local errorConn = GuiService.ErrorMessageChanged:Connect(function(errorMessage, errorType)
 		if errorMessage and errorMessage ~= "" then
 			pcall(function()
-				if self.isConnected and self.socket and typeof(self.socket) == "table" then
+				if self.isConnected and self.socket then
 					self:Send({
 						status = "disconnected",
 						reason = "game_error_or_kick",
@@ -115,12 +115,7 @@ function WebSocketManager:_shutdownSocket()
 	self.isConnected = false
 	if self.socket then
 		pcall(function()
-			if typeof(self.socket) == "table" and self.socket.Close then
-				self.socket:Close()
-			elseif typeof(self.socket) == "function" then
-				-- Если сокет внезапно остался функцией (на всякий случай)
-				self.socket("close")
-			end
+			self.socket:Close()
 		end)
 		self.socket = nil
 	end
@@ -135,47 +130,12 @@ function WebSocketManager:_connect()
 	end
 
 	self.isConnecting = true
-	
 	local success, ws = pcall(function()
-		-- Находим саму таблицу библиотеки сокетов
-		local wsLibrary = (syn and syn.websocket) or WebSocket
-		if not wsLibrary then
-			error("WebSocket API полностью отсутствует в вашем эксплойте.")
-		end
-		
-		-- Ищем правильный метод подключения (connect, Connect, new)
-		local connectMethod = wsLibrary.connect or wsLibrary.Connect or wsLibrary.new
-		if not connectMethod or typeof(connectMethod) ~= "function" then
-			error("Библиотека WebSocket найдена, но метод подключения (.connect/.Connect/.new) отсутствует.")
-		end
-		
-		-- Вызываем метод напрямую от таблицы, если это конструктор типа .new
-		return connectMethod(self.url)
+		return (syn and syn.websocket or WebSocket).connect(self.url)
 	end)
-	
 	self.isConnecting = false
 
 	if success and ws then
-		-- ФИКС: Если пришел не объект (таблица/userdata), а функция/прочее,
-		-- пробуем адаптировать под стандартный объект.
-		if typeof(ws) == "function" then
-			warn("[WS] Получена функция вместо объекта. Попытка нормализации...")
-			local rawWs = ws
-			ws = {
-				Send = function(_, msg) rawWs("send", msg) end,
-				Close = function(_) rawWs("close") end,
-				OnClose = {
-					Connect = function(_, callback)
-						task.spawn(function()
-							while task.wait(1) do
-								-- Логика проверки (заглушка)
-							end
-						end)
-					end
-				}
-			}
-		end
-
 		self.socket = ws
 		self.isConnected = true
 		self.isIdleClosed = false
@@ -193,29 +153,20 @@ function WebSocketManager:_connect()
 		self:_startIdleTracker()
 		task.spawn(function() self:_flushQueue() end)
 
-		-- Безопасная проверка OnClose
-		if typeof(ws) == "table" or typeof(ws) == "userdata" then
-			local onCloseEvent = ws.OnClose or ws.onClose
-			if onCloseEvent then
-				local connected = pcall(function()
-					if typeof(onCloseEvent) == "table" and onCloseEvent.Connect then
-						onCloseEvent:Connect(function()
-							self:_handleDisconnect()
-						end)
-						return true
-					end
-					return false
+		if ws.OnClose then
+			local connected = pcall(function()
+				ws.OnClose:Connect(function()
+					self:_handleDisconnect()
 				end)
-				
-				if not connected then
-					pcall(function()
-						ws.OnClose = function()
-							if self.socket == ws then
-								self:_handleDisconnect()
-							end
+			end)
+			if not connected then
+				pcall(function()
+					ws.OnClose = function()
+						if self.socket == ws then
+							self:_handleDisconnect()
 						end
-					end)
-				end
+					end
+				end)
 			end
 		end
 	else
@@ -290,7 +241,7 @@ function WebSocketManager:Send(customData)
 		return
 	end
 	
-	if self.isConnected and self.socket and typeof(self.socket) == "table" and self.socket.Send then
+	if self.isConnected and self.socket then
 		local sendSuccess, sendErr = pcall(function()
 			self.socket:Send(payload)
 		end)
@@ -307,7 +258,7 @@ end
 
 function WebSocketManager:Stop()
 	pcall(function()
-		if self.isConnected and self.socket and typeof(self.socket) == "table" then
+		if self.isConnected and self.socket then
 			self:Send({ status = "disconnected" })
 			task.wait(0.05)
 		end
@@ -341,7 +292,7 @@ function WebSocketManager:_flushQueue()
 	table.clear(self.queue)
 	
 	for _, payload in ipairs(tempQueue) do
-		if self.isConnected and self.socket and typeof(self.socket) == "table" and self.socket.Send then
+		if self.isConnected and self.socket then
 			local sendSuccess = pcall(function() self.socket:Send(payload) end)
 			if not sendSuccess then
 				table.insert(self.queue, payload)
