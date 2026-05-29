@@ -135,13 +135,24 @@ function WebSocketManager:_connect()
 	end
 
 	self.isConnecting = true
+	
 	local success, ws = pcall(function()
-		local connectFunc = (syn and syn.websocket and syn.websocket.connect) or (WebSocket and WebSocket.connect)
-		if connectFunc then
-			return connectFunc(self.url)
+		-- Находим саму таблицу библиотеки сокетов
+		local wsLibrary = (syn and syn.websocket) or WebSocket
+		if not wsLibrary then
+			error("WebSocket API полностью отсутствует в вашем эксплойте.")
 		end
-		error("WebSocket API не найден в данном эксплойте")
+		
+		-- Ищем правильный метод подключения (connect, Connect, new)
+		local connectMethod = wsLibrary.connect or wsLibrary.Connect or wsLibrary.new
+		if not connectMethod or typeof(connectMethod) ~= "function" then
+			error("Библиотека WebSocket найдена, но метод подключения (.connect/.Connect/.new) отсутствует.")
+		end
+		
+		-- Вызываем метод напрямую от таблицы, если это конструктор типа .new
+		return connectMethod(self.url)
 	end)
+	
 	self.isConnecting = false
 
 	if success and ws then
@@ -155,10 +166,9 @@ function WebSocketManager:_connect()
 				Close = function(_) rawWs("close") end,
 				OnClose = {
 					Connect = function(_, callback)
-						-- Заглушка, если сокет-функция не поддерживает ивенты из коробки
 						task.spawn(function()
 							while task.wait(1) do
-								-- Логика проверки закрытия (зависит от эксплойта)
+								-- Логика проверки (заглушка)
 							end
 						end)
 					end
@@ -183,26 +193,29 @@ function WebSocketManager:_connect()
 		self:_startIdleTracker()
 		task.spawn(function() self:_flushQueue() end)
 
-		-- Безопасная проверка OnClose (защита от краша, если OnClose nil или не таблица)
-		if typeof(ws) == "table" and ws.OnClose then
-			local connected = pcall(function()
-				if typeof(ws.OnClose) == "table" and ws.OnClose.Connect then
-					ws.OnClose:Connect(function()
-						self:_handleDisconnect()
-					end)
-					return true
-				end
-				return false
-			end)
-			
-			if not connected then
-				pcall(function()
-					ws.OnClose = function()
-						if self.socket == ws then
+		-- Безопасная проверка OnClose
+		if typeof(ws) == "table" or typeof(ws) == "userdata" then
+			local onCloseEvent = ws.OnClose or ws.onClose
+			if onCloseEvent then
+				local connected = pcall(function()
+					if typeof(onCloseEvent) == "table" and onCloseEvent.Connect then
+						onCloseEvent:Connect(function()
 							self:_handleDisconnect()
-						end
+						end)
+						return true
 					end
+					return false
 				end)
+				
+				if not connected then
+					pcall(function()
+						ws.OnClose = function()
+							if self.socket == ws then
+								self:_handleDisconnect()
+							end
+						end
+					end)
+				end
 			end
 		end
 	else
