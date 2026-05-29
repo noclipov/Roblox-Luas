@@ -77,7 +77,7 @@ function WebSocketManager:_setupLeaveListeners()
 	local errorConn = GuiService.ErrorMessageChanged:Connect(function(errorMessage, errorType)
 		if errorMessage and errorMessage ~= "" then
 			pcall(function()
-				if self.isConnected and self.socket then
+				if self.isConnected and self.socket and typeof(self.socket) == "table" then
 					self:Send({
 						status = "disconnected",
 						reason = "game_error_or_kick",
@@ -115,7 +115,12 @@ function WebSocketManager:_shutdownSocket()
 	self.isConnected = false
 	if self.socket then
 		pcall(function()
-			self.socket:Close()
+			if typeof(self.socket) == "table" and self.socket.Close then
+				self.socket:Close()
+			elseif typeof(self.socket) == "function" then
+				-- Если сокет внезапно остался функцией (на всякий случай)
+				self.socket("close")
+			end
 		end)
 		self.socket = nil
 	end
@@ -131,11 +136,36 @@ function WebSocketManager:_connect()
 
 	self.isConnecting = true
 	local success, ws = pcall(function()
-		return (syn and syn.websocket or WebSocket).connect(self.url)
+		local connectFunc = (syn and syn.websocket and syn.websocket.connect) or (WebSocket and WebSocket.connect)
+		if connectFunc then
+			return connectFunc(self.url)
+		end
+		error("WebSocket API не найден в данном эксплойте")
 	end)
 	self.isConnecting = false
 
 	if success and ws then
+		-- ФИКС: Если пришел не объект (таблица/userdata), а функция/прочее,
+		-- пробуем адаптировать под стандартный объект.
+		if typeof(ws) == "function" then
+			warn("[WS] Получена функция вместо объекта. Попытка нормализации...")
+			local rawWs = ws
+			ws = {
+				Send = function(_, msg) rawWs("send", msg) end,
+				Close = function(_) rawWs("close") end,
+				OnClose = {
+					Connect = function(_, callback)
+						-- Заглушка, если сокет-функция не поддерживает ивенты из коробки
+						task.spawn(function()
+							while task.wait(1) do
+								-- Логика проверки закрытия (зависит от эксплойта)
+							end
+						end)
+					end
+				}
+			}
+		end
+
 		self.socket = ws
 		self.isConnected = true
 		self.isIdleClosed = false
@@ -153,12 +183,18 @@ function WebSocketManager:_connect()
 		self:_startIdleTracker()
 		task.spawn(function() self:_flushQueue() end)
 
-		if ws.OnClose then
+		-- Безопасная проверка OnClose (защита от краша, если OnClose nil или не таблица)
+		if typeof(ws) == "table" and ws.OnClose then
 			local connected = pcall(function()
-				ws.OnClose:Connect(function()
-					self:_handleDisconnect()
-				end)
+				if typeof(ws.OnClose) == "table" and ws.OnClose.Connect then
+					ws.OnClose:Connect(function()
+						self:_handleDisconnect()
+					end)
+					return true
+				end
+				return false
 			end)
+			
 			if not connected then
 				pcall(function()
 					ws.OnClose = function()
@@ -241,7 +277,7 @@ function WebSocketManager:Send(customData)
 		return
 	end
 	
-	if self.isConnected and self.socket then
+	if self.isConnected and self.socket and typeof(self.socket) == "table" and self.socket.Send then
 		local sendSuccess, sendErr = pcall(function()
 			self.socket:Send(payload)
 		end)
@@ -258,7 +294,7 @@ end
 
 function WebSocketManager:Stop()
 	pcall(function()
-		if self.isConnected and self.socket then
+		if self.isConnected and self.socket and typeof(self.socket) == "table" then
 			self:Send({ status = "disconnected" })
 			task.wait(0.05)
 		end
@@ -292,7 +328,7 @@ function WebSocketManager:_flushQueue()
 	table.clear(self.queue)
 	
 	for _, payload in ipairs(tempQueue) do
-		if self.isConnected and self.socket then
+		if self.isConnected and self.socket and typeof(self.socket) == "table" and self.socket.Send then
 			local sendSuccess = pcall(function() self.socket:Send(payload) end)
 			if not sendSuccess then
 				table.insert(self.queue, payload)
