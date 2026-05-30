@@ -31,7 +31,7 @@ Library.setup_keybinds = function(keybinds)
 	for key, callback in pairs(keybinds) do if not callback then continue end table.insert(keys, key) end
 	Library.keybinds_handler = UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		local key = input.KeyCode
-		if keybinds[key] then keybinds[key]() end
+		if keybinds[key.Name] then keybinds[key.Name]() end
 	end)
 	msg.New("Purple", "Information", ("Available keybinds are: %s"):format(table.concat(keys, ' | ')), 5)
 end
