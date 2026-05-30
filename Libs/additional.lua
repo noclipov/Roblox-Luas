@@ -42,7 +42,7 @@ Library.join_place = function(placeid, jobid)
         TeleportService:Teleport(placeid, game.Players.LocalPlayer)
     end
 end
-Library.hl_player = function(ply, fillcolor, outlinecolor, filltransparency, outlinetransparency)
+Library.hl_player = function(ply, fillcolor, outlinecolor, filltransparency, outlinetransparency, depthmode)
     if not ply.Character then return end
 	fillcolor = fillcolor or Color3.fromRGB(0,0,0)
     outlinecolor = outlinecolor or Color3.fromRGB(255,255,255)
@@ -54,7 +54,7 @@ Library.hl_player = function(ply, fillcolor, outlinecolor, filltransparency, out
     hl.Adornee = ply.Character
     hl.FillColor = fillcolor
     hl.OutlineColor = outlinecolor
-    hl.DepthMode = Enum.HighlightDepthMode.Occluded
+    hl.DepthMode = depthmode or Enum.HighlightDepthMode.Occluded
     hl.FillTransparency = filltransparency
     hl.OutlineTransparency = outlinetransparency
     return hl
