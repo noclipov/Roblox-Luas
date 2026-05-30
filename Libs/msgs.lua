@@ -26,8 +26,7 @@ Library.rgb_colors = {
     white = Color3.fromRGB(255,255,255)
 }
 local TextChatService = game:GetService("TextChatService")
-Library.Link = "https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Libs/msgs.lua"
--- loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Libs/msgs.lua"))()
+-- loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/Libs/msgs.lua"))()
 Library.Chat = function(text:string, color:string)
     color = color:lower()
     if color and type(color) == "string" and Library.hex_colors[color:lower()] then

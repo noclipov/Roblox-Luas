@@ -1,8 +1,7 @@
 local Camera = workspace:FindFirstChildWhichIsA("Camera")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local Library = {}
-Library.Link = "https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Libs/vinp.lua"
--- loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Libs/vinp.lua"))()
+-- loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/Libs/input.lua"))()
 Library.MouseClick = function(x, y, wtime)
     VirtualInputManager:SendMouseButtonEvent(x, y, 0, true, nil, 0)
     if wtime then task.wait(wtime) end

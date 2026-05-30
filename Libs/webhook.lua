@@ -1,5 +1,5 @@
 local Library = {}
-Library.Link = "https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Libs/wh.lua"
+Library.Link = "https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/Libs/webhook.lua"
 
 Library.Send = function(title, desc, color, link)
     local lp = game.Players.LocalPlayer
@@ -39,9 +39,6 @@ Library.Send = function(title, desc, color, link)
                 text = "Noclipov Runtime Environment • " .. os.date("%X"),
                 icon_url = "https://i.imgur.com/x4q1HDg.png"
             },
-            
-            -- Добавляет время отправки внизу сообщения
-            timestamp = DateTime.now():ToIsoDate()
         }}
     }
 

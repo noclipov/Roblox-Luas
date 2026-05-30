@@ -1,11 +1,11 @@
 local Library = {}
 local TeleportService = game:GetService('TeleportService')
 local ChatService = game:GetService("TextChatService")
-local msg = loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Libs/notify.lua"))()
+local msg = loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/Libs/notify.lua"))()
 local pls = game.Players
 local lp = pls.LocalPlayer
-Library.Link = "https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Libs/additional.lua"
--- loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Libs/additional.lua"))()
+Library.Link = "https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/Libs/additional.lua"
+-- loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/Libs/additional.lua"))()
 Library.dist_to = function(pos)
     if not pos or not lp.Character or not lp.Character.PrimaryPart then return end
     if typeof(pos) == 'Vector3' then pos = pos
@@ -25,7 +25,7 @@ Library.is_alive = function(ply)
     if ply.Character:FindFirstChild("Humanoid") and ply.Character:FindFirstChild("Humanoid").Health > 0 then return true end
     return false
 end
-Library.get_ping = function() 
+Library.get_ping = function()
     return lp:GetNetworkPing()*2000
 end
 Library.get_friends = function(player)
@@ -83,7 +83,7 @@ end
 Library.inside_cube = function(point, cube)
 	if not cube then return end
 	point = point or lp.Character.PrimaryPart
-	local relative = cframe:PointToObjectSpace(point)
+	local relative = cube:PointToObjectSpace(point)
 	return math.abs(relative.X) <= cube.Size.X / 2
 		and math.abs(relative.Y) <= cube.Size.Y / 2
 		and math.abs(relative.Z) <= cube.Size.Z / 2
@@ -110,6 +110,80 @@ end
 Library.toggle_coregui = function(coregui, state)
 	game.StarterGui:SetCoreGuiEnabled(coregui, state)
 end
+Library.load_file = function(path, silent)
+	silent = silent or false
+	if isfolder("noclipov/") and isfile("noclipov/" .. path) then
+		local success, result = pcall(readfile, "noclipov/" .. path)
+		if success then
+			local fn, err = loadstring(result)
+			if fn then if not silent then msg.Mini("Mint", "Загружаем "..path, 1) end return fn() else msg.Mini("Coral", "Ошибка компиляции файла " .. path .. ": " .. tostring(err), 3) end
+		else
+			msg.Mini("Coral", "Не удалось прочитать файл " .. path, 3)
+		end
+	end
+end
+Library.round = function(num, numDecimalPlaces)
+	local mult = 10^(numDecimalPlaces or 0)
+	return math.floor(num * mult + 0.5) / mult
+end
+Library.to_letters = function(num, DecimalPlaces)
+	DecimalPlaces = DecimalPlaces or 0
+	if num >= 1e78 then num = num / 1e78
+		return Library.Round(num, DecimalPlaces).."QiVi"
+	elseif num >= 1e75 then num = num / 1e75
+		return Library.Round(num, DecimalPlaces).."QaVi"
+	elseif num >= 1e72 then num = num / 1e72
+		return Library.Round(num, DecimalPlaces).."TVi"
+	elseif num >= 1e69 then num = num / 1e69
+		return Library.Round(num, DecimalPlaces).."DVi"
+	elseif num >= 1e66 then num = num / 1e66
+		return Library.Round(num, DecimalPlaces).."UVi"
+	elseif num >= 1e63 then num = num / 1e63
+		return Library.Round(num, DecimalPlaces).."Vi"
+	elseif num >= 1e60 then num = num / 1e60
+		return Library.Round(num, DecimalPlaces).."NoV"
+	elseif num >= 1e57 then num = num / 1e57
+		return Library.Round(num, DecimalPlaces).."OcDc"
+	elseif num >= 1e54 then num = num / 1e54
+		return Library.Round(num, DecimalPlaces).."SpDc"
+	elseif num >= 1e51 then num = num / 1e51
+		return Library.Round(num, DecimalPlaces).."SxDc"
+	elseif num >= 1e48 then num = num / 1e48
+		return Library.Round(num, DecimalPlaces).."QiDc"
+	elseif num >= 1e45 then num = num / 1e45
+		return Library.Round(num, DecimalPlaces).."QaDc"
+	elseif num >= 1e42 then num = num / 1e42
+		return Library.Round(num, DecimalPlaces).."TDc"
+	elseif num >= 1e39 then num = num / 1e39
+		return Library.Round(num, DecimalPlaces).."DDc"
+	elseif num >= 1e36 then num = num / 1e36
+		return Library.Round(num, DecimalPlaces).."UDc"
+	elseif num >= 1e33 then num = num / 1e33
+		return Library.Round(num, DecimalPlaces).."Dc"
+	elseif num >= 1e30 then num = num / 1e30
+		return Library.Round(num, DecimalPlaces).."No"
+	elseif num >= 1e27 then num = num / 1e27
+		return Library.Round(num, DecimalPlaces).."Oc"
+	elseif num >= 1e24 then num = num / 1e24
+		return Library.Round(num, DecimalPlaces).."Sp"
+	elseif num >= 1e21 then num = num / 1e21
+		return Library.Round(num, DecimalPlaces).."Sx"
+	elseif num >= 1e18 then num = num / 1e18
+		return Library.Round(num, DecimalPlaces).."Qi"
+	elseif num >= 1e15 then num = num / 1e15
+		return Library.Round(num, DecimalPlaces).."Qa"
+	elseif num >= 1e12 then num = num / 1e12
+		return Library.Round(num, DecimalPlaces).."T"
+	elseif num >= 1e09 then num = num / 1e09
+		return Library.Round(num, DecimalPlaces).."B"
+	elseif num >= 1e06 then num = num / 1e06
+		return Library.Round(num, DecimalPlaces).."M"
+	elseif num >= 1e03 then num = num / 1e03
+		return Library.Round(num, DecimalPlaces).."K"
+	else return num
+	end
+end
+
 Library.simple_spy = function()
     msg.Mini("Purple", "Simple Spy: Loading", 2)
     loadstring(game:HttpGetAsync("https://raw.githubusercontent.com/78n/SimpleSpy/main/SimpleSpySource.lua"))()
@@ -119,10 +193,10 @@ Library.dex_explorer = function()
     loadstring(game:HttpGet("https://github.com/AZYsGithub/DexPlusPlus/releases/latest/download/out.lua"))()
 end
 Library.anti_afk = function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/anti_afk.lua"))()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/anti_afk.lua"))()
 end
 Library.fps_control = function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/fps_control.lua"))()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/fps_control.lua"))()
 end
 
 local alias_list = {
@@ -132,17 +206,20 @@ local alias_list = {
 	["has_value"] = {"hasValue","HasValue","hasvalue"},
 	["get_ping"] = {"getPing","GetPing","getping"},
 	["get_friends"] = {"getFriend","GetFriends","getfriends"},
-	["format_number"] = {"formatNumber","FormatNumber","formatnumber"},
 	["join_place"] = {"joinPlace","JoinPlace","joinplace"},
-	["hl_player"] = {"hlPlayer","HLPlayer","hlplayer"},
-	["unhl_player"] = {"unhlPlayer","UnHLPlayer","unhlplayer"},
+	["hl_player"] = {"hlPlayer","HLPlayer","hlplayer", "hl", "HL"},
+	["unhl_player"] = {"unhlPlayer","UnHLPlayer","unhlplayer", "unhl", "unHL"},
 	["get_teleport"] = {"getTeleport","GetTeleport","getteleport"},
 	["equip_tool"] = {"equipTool","EquipTool","equiptool"},
 	["remove_tool"] = {"removeTool","RemoveTool","removetool"},
 	["inside_cube"] = {"insideCube","InsideCube","insidecube"},
-	["chat"] = {"Chat","message","send_message", "Message", "SendMessage", "sendMessage"},
+	["chat"] = {"Chat", "send_message", "SendMessage", "sendMessage", "message", "Message"},
 	["chat_filter"] = {"filter","ChatFilter","chatFilter", "chatfilter"},
 	["toggle_coregui"] = {"toggleCG","toggleCoreGui","CoreGui", "coregui"},
+	["load_file"] = {"loadFile","LoadFile","loadfile", "load"},
+	["round"] = {"Round"},
+	["to_letters"] = {"toLetters","ToLetters","toletters", "Letters", "letters", "format"},
+
 	["simple_spy"] = {"simpleSpy","SimpleSpy","simplespy", "ss"},
 	["dex_explorer"] = {"dexExplorer","DexExplorer","dexexplorer", "de"},
 	["anti_afk"] = {"antiAFK","AntiAFK","antiafk", "afk"},

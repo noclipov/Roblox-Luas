@@ -1,12 +1,13 @@
-﻿-- loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/fps_control.lua"))()
+﻿-- loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/fps_control.lua"))()
 while not game.IsLoaded do task.wait() end
-local LINK = "https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/fps_control.lua"
+local LINK = "https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/fps_control.lua"
+local msg = loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/Libs/notify.lua"))()
 if not isrbxactive or not setfpscap or not getfpscap then msg.Mini("Coral", "Your executor rlly sucks", 0); return end
 local maxfps = getfpscap and getfpscap() or 120
 if not _G.FPSControlLoaded then
 	_G.FPSControlLoaded = true
 	local last_state
-	task.spawn(function()
+	local fpsthread = task.spawn(function()
 		while _G.FPSControlLoaded do task.wait()
 			local new_state = isrbxactive()
 			if new_state ~= last_state then
@@ -18,5 +19,5 @@ if not _G.FPSControlLoaded then
 	end)
 	game.Players.PlayerRemoving:Connect(function(ply) if ply == game.Players.LocalPlayer then _G.FPSControlLoaded = false; task.cancel(fpsthread); setfpscap(maxfps) end end)
 	queue_on_teleport('_G.FPSControlLoaded = false; task.wait(0.2); loadstring(game:HttpGet("'..LINK..'"))()')
-	loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Libs/notify.lua"))().Mini("Purple", "FPS-Control: Loaded", 2)
+	msg.Mini("Purple", "FPS-Control: Loaded", 2)
 end
