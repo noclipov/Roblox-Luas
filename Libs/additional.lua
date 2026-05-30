@@ -1,6 +1,7 @@
 local Library = {}
 local TeleportService = game:GetService('TeleportService')
 local ChatService = game:GetService("TextChatService")
+local UserInputService = game:GetService("UserInputService")
 local msg = loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/Libs/notify.lua"))()
 local pls = game.Players
 local lp = pls.LocalPlayer
@@ -15,6 +16,25 @@ Library.dist_to = function(pos)
         elseif pos:IsA('Player') then pos = pos.Character.PrimaryPart.Position end
     end
     return math.floor(((game.Players.LocalPlayer.Character.PrimaryPart).Position - pos).magnitude) or 0
+end
+Library.teleport = function(pos, spread)
+	if not lp.Character or not lp.Character.PrimaryPart then return end
+	spread = spread or 5
+	local current_position = lp.Character.PrimaryPart.CFrame
+	lp.Character.PrimaryPart.CFrame = CFrame.new(pos.X+math.random(-spread, spread), pos.Y, pos.Z+math.random(-spread, spread))
+	return current_position
+end
+Library.keybinds_handler = nil
+Library.setup_keybinds = function(keybinds)
+	if Library.keybinds_handler then Library.keybinds_handler:Disconnect() end
+	local keys = {}
+	for key, callback in pairs(keybinds) do table.insert(keys, key) end
+	Library.keybinds_handler = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+		if gameProcessed then return end
+		local key = input.KeyCode
+		if keybinds[key] then keybinds[key]() end
+	end)
+	msg.New("Purple", "KeyBinds", table.concat(keys, ' | '))
 end
 Library.is_moving = function(humanoid)
     if not humanoid then return false end
@@ -201,6 +221,8 @@ end
 
 local alias_list = {
 	["dist_to"] = {"distTo","DistTo","distto"},
+	["teleport"] = {"teleport","tp","setpos"},
+	["setup_keybinds"] = {"setupKeyBinds","KeyBinds","keybinds", "keys", "binds", "setupKeys", "setupBinds"},
 	["is_moving"] = {"isMoving","IsMoving","ismoving"},
 	["is_alive"] = {"isAlive","IsAlive","isalive"},
 	["has_value"] = {"hasValue","HasValue","hasvalue"},
