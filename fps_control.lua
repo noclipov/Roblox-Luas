@@ -1,4 +1,4 @@
-﻿-- loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/fps_control.lua"))()
+-- loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/fps_control.lua"))()
 while not game.IsLoaded do task.wait() end
 local LINK = "https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/fps_control.lua"
 local msg = loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/Libs/notify.lua"))()
