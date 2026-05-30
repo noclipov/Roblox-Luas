@@ -9,7 +9,7 @@ local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 
-local conv = loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/Libs/convs.lua"))()
+local add = loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/Libs/additional.lua"))()
 local msg = loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/Libs/notify.lua"))()
 local ObjectInteractionModule = {}
 local activeTargetScanner = nil
@@ -159,7 +159,7 @@ function ScannerInstance:CreateNumericCallout(part, data, targetPlayer)
     
     local function updateValue()
         local rawValue = targetPlayer:GetAttribute(data.Attr) or 0
-        valueLabel.Text = conv.ToLetters(rawValue)
+        valueLabel.Text = add.ToLetters(rawValue)
         
         valueLabel.TextSize = 18
         TweenService:Create(valueLabel, TweenInfo.new(0.3), {TextSize = 14}):Play()
