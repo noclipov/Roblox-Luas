@@ -24,12 +24,12 @@ Library.teleport = function(pos, spread)
 	lp.Character.PrimaryPart.CFrame = CFrame.new(pos.X+math.random(-spread, spread), pos.Y, pos.Z+math.random(-spread, spread))
 	return current_position
 end
-Library.keybinds_handler = nil
+getgenv().keybinds_handler = nil
 Library.setup_keybinds = function(keybinds)
-	if Library.keybinds_handler then Library.keybinds_handler:Disconnect() end
+	if getgenv().keybinds_handler then getgenv().keybinds_handler:Disconnect() end
 	local keys = {}
 	for key, callback in pairs(keybinds) do if not callback then continue end table.insert(keys, key) end
-	Library.keybinds_handler = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	getgenv().keybinds_handler = UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		local key = input.KeyCode
 		if keybinds[key.Name] then keybinds[key.Name]() end
 	end)
