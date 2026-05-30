@@ -119,7 +119,7 @@ Library.dex_explorer = function()
     loadstring(game:HttpGet("https://github.com/AZYsGithub/DexPlusPlus/releases/latest/download/out.lua"))()
 end
 Library.anti_afk = function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/Anti-AFK.lua"))()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/anti_afk.lua"))()
 end
 Library.fps_control = function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/dimanoclip/Roblox-Luas/main/fps_control.lua"))()
@@ -146,7 +146,7 @@ local alias_list = {
 	["simple_spy"] = {"simpleSpy","SimpleSpy","simplespy", "ss"},
 	["dex_explorer"] = {"dexExplorer","DexExplorer","dexexplorer", "de"},
 	["anti_afk"] = {"antiAFK","AntiAFK","antiafk", "afk"},
-	["fps_control"] = {"fpsControl","FPSControl","fpscontrol", "fpsc"},
+	["fps_control"] = {"fpsControl","FPSControl","fpscontrol", "fps"},
 }
 
 for src, aliases in pairs(alias_list) do
