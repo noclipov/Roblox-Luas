@@ -33,7 +33,7 @@ Library.setup_keybinds = function(keybinds)
 		local key = input.KeyCode
 		if keybinds[key] then keybinds[key]() end
 	end)
-	msg.New("Purple", "KeyBinds", table.concat(keys, ' | '), 5)
+	msg.New("Purple", "Information", ("Available keybinds are: %s"):format(table.concat(keys, ' | ')), 5)
 end
 Library.is_moving = function(humanoid)
     if not humanoid then return false end
