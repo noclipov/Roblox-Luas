@@ -28,13 +28,12 @@ Library.keybinds_handler = nil
 Library.setup_keybinds = function(keybinds)
 	if Library.keybinds_handler then Library.keybinds_handler:Disconnect() end
 	local keys = {}
-	for key, callback in pairs(keybinds) do table.insert(keys, key) end
+	for key, callback in pairs(keybinds) do if not callback then continue end table.insert(keys, key) end
 	Library.keybinds_handler = UserInputService.InputBegan:Connect(function(input, gameProcessed)
-		if gameProcessed then return end
 		local key = input.KeyCode
 		if keybinds[key] then keybinds[key]() end
 	end)
-	msg.New("Purple", "KeyBinds", table.concat(keys, ' | '))
+	msg.New("Purple", "KeyBinds", table.concat(keys, ' | '), 5)
 end
 Library.is_moving = function(humanoid)
     if not humanoid then return false end
