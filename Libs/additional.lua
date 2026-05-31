@@ -5,7 +5,6 @@ local UserInputService = game:GetService("UserInputService")
 local msg = loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/Libs/notify.lua"))()
 local pls = game.Players
 local lp = pls.LocalPlayer
-Library.Link = "https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/Libs/additional.lua"
 -- loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/Libs/additional.lua"))()
 Library.dist_to = function(pos)
     if not pos or not lp.Character or not lp.Character.PrimaryPart then return end
