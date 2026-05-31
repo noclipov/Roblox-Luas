@@ -21,7 +21,10 @@ Library.teleport = function(pos, spread)
 	if not lp.Character or not lp.Character.PrimaryPart then return end
 	spread = spread or 0
 	local current_position = lp.Character.PrimaryPart.CFrame
-	lp.Character.PrimaryPart.CFrame = CFrame.new(spread > 0 and pos.X+math.random(-spread, spread) or pos.X, pos.Y, spread > 0 and pos.Z+math.random(-spread, spread) or pos.Z)
+	local x = spread > 0 and (pos.X+math.random(-spread, spread)) or pos.X
+	local y = pos.Y
+	local z = spread > 0 and (pos.Z+math.random(-spread, spread)) or pos.Z
+	lp.Character.PrimaryPart.CFrame = CFrame.new(x,y,z)
 	return current_position
 end
 getgenv().keybinds_handler = nil
