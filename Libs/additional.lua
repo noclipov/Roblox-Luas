@@ -159,6 +159,8 @@ Library.load_module = function(module_name, instant)
 				return fn
 			end
 		end
+	else
+		return result
 	end
     return false
 end
