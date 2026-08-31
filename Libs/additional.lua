@@ -95,7 +95,7 @@ Library.equip_tool = function(name, instance)
 		lp.Character:WaitForChild("Humanoid"):UnequipTools()
 	end
 end
-Library.remove_tool = function(name, instance)
+Library.remove_tool = function(nam, instance)
 	if not lp.Character then return end
 	if name and lp.Backpack:FindFirstChild(name) or instance then
 		(name and lp.Backpack[name] or instance):Destroy()
@@ -205,9 +205,17 @@ Library.to_letters = function(num, DecimalPlaces)
 	end
 end
 
+Library.load_module = function(module_name)
+	module_name = module_name or "additional.lua"
+	local success = pcall(Library.laod_file, module_name)
+	if not success then
+		loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/refs/heads/main/Libs/"..module_name))()
+	end
+end
+
 Library.simple_spy = function()
     msg.Mini("Purple", "Simple Spy: Loading", 2)
-    loadstring(game:HttpGetAsync("https://raw.githubusercontent.com/78n/SimpleSpy/main/SimpleSpySource.lua"))()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/78n/SimpleSpy/main/SimpleSpySource.lua"))()
 end
 Library.dex_explorer = function()
     msg.Mini("Purple", "Dex Explorer: Loading", 5)
@@ -216,7 +224,9 @@ end
 Library.anti_afk = function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/anti_afk.lua"))()
 end
-Library.fps_control = function()
+Library.fps_control = function(fps_limit)
+	fps_limit = fps_limit or 5
+	getgenv().idle_fps = fps_limit
     loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/fps_control.lua"))()
 end
 
@@ -240,6 +250,7 @@ local alias_list = {
 	["chat_filter"] = {"filter","ChatFilter","chatFilter", "chatfilter"},
 	["toggle_coregui"] = {"toggleCG","toggleCoreGui","CoreGui", "coregui"},
 	["load_file"] = {"loadFile","LoadFile","loadfile", "load"},
+	["load_module"] = {"loadModule","LoadModule","loadmodule", "module"},
 	["round"] = {"Round"},
 	["to_letters"] = {"toLetters","ToLetters","toletters", "Letters", "letters", "format"},
 

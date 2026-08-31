@@ -4,6 +4,8 @@ local LINK = "https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/fps_co
 local msg = loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/Libs/notify.lua"))()
 if not isrbxactive or not setfpscap or not getfpscap then msg.Mini("Coral", "Your executor rlly sucks", 0); return end
 local maxfps = getfpscap and getfpscap() or 120
+local idle_fps = getgenv().idle_fps and getgenv().idle_fps or 5
+getgenv().idle_fps = nil
 if not _G.FPSControlLoaded then
 	_G.FPSControlLoaded = true
 	local last_state
