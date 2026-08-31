@@ -150,10 +150,13 @@ Library.load_module = function(module_name, instant)
 	local success, result = pcall(Library.load_file, module_name, false, instant)
     if not result then
 		local fn, err = loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/refs/heads/main/Libs/"..module_name))
-		if instant then
-			return fn()
-		else
-			return fn
+		if err then fn, err = loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/"..module_name)) end
+		if fn then
+			if instant then
+				return fn()
+			else
+				return fn
+			end
 		end
 	end
     return false
