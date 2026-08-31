@@ -2,10 +2,10 @@ local Library = {}
 local TeleportService = game:GetService('TeleportService')
 local ChatService = game:GetService("TextChatService")
 local UserInputService = game:GetService("UserInputService")
-local msg = loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/Libs/notify.lua"))()
+local msg = loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/refs/heads/main/Libs/notify.lua"))()
 local pls = game.Players
 local lp = pls.LocalPlayer
--- loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/Libs/additional.lua"))()
+-- loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/refs/heads/main/Libs/additional.lua"))()
 Library.dist_to = function(pos)
     if not pos or not lp.Character or not lp.Character.PrimaryPart then return end
     if typeof(pos) == 'Vector3' then pos = pos
@@ -83,7 +83,8 @@ end
 Library.unhl_player = function(ply)
 	if not ply.Character or not ply.Character:FindFirstChild("U_Highlight") then return end
 	ply.Character:FindFirstChild("U_Highlight"):Remove()
-endLibrary.get_teleport = function()
+end
+Library.get_teleport = function()
     setclipboard(string.format("game:GetService('TeleportService'):TeleportToPlaceInstance(%s, '%s', game.Players.LocalPlayer)", tostring(game.PlaceId), game.JobId))
 end
 Library.equip_tool = function(name, instance)
