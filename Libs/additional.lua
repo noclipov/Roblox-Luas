@@ -83,8 +83,7 @@ end
 Library.unhl_player = function(ply)
 	if not ply.Character or not ply.Character:FindFirstChild("U_Highlight") then return end
 	ply.Character:FindFirstChild("U_Highlight"):Remove()
-end
-Library.get_teleport = function()
+endLibrary.get_teleport = function()
     setclipboard(string.format("game:GetService('TeleportService'):TeleportToPlaceInstance(%s, '%s', game.Players.LocalPlayer)", tostring(game.PlaceId), game.JobId))
 end
 Library.equip_tool = function(name, instance)
@@ -131,13 +130,13 @@ end
 Library.toggle_coregui = function(coregui, state)
 	game.StarterGui:SetCoreGuiEnabled(coregui, state)
 end
-Library.load_file = function(path, silent)
+Library.load_file = function(path, silent, instant)
 	silent = silent or false
 	if isfolder("noclipov/") and isfile("noclipov/" .. path) then
 		local success, result = pcall(readfile, "noclipov/" .. path)
 		if success then
 			local fn, err = loadstring(result)
-			if fn then if not silent then msg.Mini("Mint", "Загружаем "..path, 1) end return fn() else msg.Mini("Coral", "Ошибка компиляции файла " .. path .. ": " .. tostring(err), 3) end
+			if fn then if not silent then msg.Mini("Mint", "Загружаем "..path, 1) end if instant then return fn() else return fn() end else msg.Mini("Coral", "Ошибка компиляции файла " .. path .. ": " .. tostring(err), 3) end
 		else
 			msg.Mini("Coral", "Не удалось прочитать файл " .. path, 3)
 		end
@@ -205,11 +204,17 @@ Library.to_letters = function(num, DecimalPlaces)
 	end
 end
 
-Library.load_module = function(module_name)
+Library.load_module = function(module_name, instant)
+	instant = instant or true
 	module_name = module_name or "additional.lua"
-	local success = pcall(Library.laod_file, module_name)
+	local success = pcall(Library.laod_file, module_name, false, instant)
 	if not success then
-		loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/refs/heads/main/Libs/"..module_name))()
+		local func, err = loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/refs/heads/main/Libs/"..module_name))
+		if instant then
+			return func()
+		else
+			return func
+		end
 	end
 end
 
