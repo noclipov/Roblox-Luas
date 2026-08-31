@@ -209,11 +209,13 @@ Library.load_module = function(module_name, instant)
 	module_name = module_name or "additional.lua"
 	local success = pcall(Library.laod_file, module_name, false, instant)
 	if not success then
-		local success, func = loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/refs/heads/main/Libs/"..module_name))
+		print("trying to load module "..module_name.." from githib")
+		local fn, err = loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/refs/heads/main/Libs/"..module_name))
+		print(fn, err)
 		if instant then
-			return func()
+			return fn()
 		else
-			return func
+			return fn
 		end
 	end
 end
