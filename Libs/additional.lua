@@ -136,7 +136,7 @@ Library.load_file = function(path, silent, instant)
 		local success, result = pcall(readfile, "noclipov/" .. path)
 		if success then
 			local fn, err = loadstring(result)
-			if fn then if not silent then msg.Mini("Mint", "Загружаем "..path, 1) end if instant then return fn() else return fn() end else msg.Mini("Coral", "Ошибка компиляции файла " .. path .. ": " .. tostring(err), 3) end
+			if fn then if not silent then msg.Mini("Mint", "Загружаем "..path, 1) end if instant then return fn() else return fn end else msg.Mini("Coral", "Ошибка компиляции файла " .. path .. ": " .. tostring(err), 3) end
 		else
 			msg.Mini("Coral", "Не удалось прочитать файл " .. path, 3)
 		end
@@ -209,7 +209,7 @@ Library.load_module = function(module_name, instant)
 	module_name = module_name or "additional.lua"
 	local success = pcall(Library.laod_file, module_name, false, instant)
 	if not success then
-		local func, err = loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/refs/heads/main/Libs/"..module_name))
+		local success, func = loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/refs/heads/main/Libs/"..module_name))
 		if instant then
 			return func()
 		else
