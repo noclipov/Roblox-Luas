@@ -140,7 +140,23 @@ Library.load_file = function(path, silent, instant)
 		else
 			msg.Mini("Coral", "Не удалось прочитать файл " .. path, 3)
 		end
+    else
+        return false
 	end
+end
+Library.load_module = function(module_name, instant)
+	instant = instant or true
+	module_name = module_name or "additional.lua"
+	local success, result = pcall(Library.load_file, module_name, false, instant)
+    if not result then
+		local fn, err = loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/refs/heads/main/Libs/"..module_name))
+		if instant then
+			return fn()
+		else
+			return fn
+		end
+	end
+    return false
 end
 Library.round = function(num, numDecimalPlaces)
 	local mult = 10^(numDecimalPlaces or 0)
@@ -204,21 +220,6 @@ Library.to_letters = function(num, DecimalPlaces)
 	end
 end
 
-Library.load_module = function(module_name, instant)
-	instant = instant or true
-	module_name = module_name or "additional.lua"
-	local success = pcall(Library.laod_file, module_name, false, instant)
-	if not success then
-		print("trying to load module "..module_name.." from githib")
-		local fn, err = loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/refs/heads/main/Libs/"..module_name))
-		print(fn, err)
-		if instant then
-			return fn()
-		else
-			return fn
-		end
-	end
-end
 
 Library.simple_spy = function()
     msg.Mini("Purple", "Simple Spy: Loading", 2)
