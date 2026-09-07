@@ -6,6 +6,7 @@ local msg = loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/
 local pls = game.Players
 local lp = pls.LocalPlayer
 -- loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/refs/heads/main/Libs/additional.lua"))()
+Library.Link = "https://raw.githubusercontent.com/noclipov/Roblox-Luas/refs/heads/main/Libs/additional.lua"
 Library.dist_to = function(pos)
     if not pos or not lp.Character or not lp.Character.PrimaryPart then return end
     if typeof(pos) == 'Vector3' then pos = pos
@@ -134,9 +135,26 @@ end
 Library.toggle_coregui = function(coregui, state)
 	game.StarterGui:SetCoreGuiEnabled(coregui, state)
 end
+local function check_path_is_noclipov(path)
+	if not string.find(path, "noclipov/") then
+		path = "noclipov/"..path
+	end
+	if not string.find(path, ".lua") and not string.find(path, ".txt") and not string.find(path, ".json") then
+		path = path..".txt"
+	end
+	return path
+end
+Library.check_noclipov = function(file)
+	if file then
+		return isfolder("noclipov/") and isfile("noclipov/" .. file)
+	else
+		return isfolder("noclipov/")
+	end
+end
 Library.load_file = function(path, silent, instant)
+	path = check_path_is_noclipov(path)
 	silent = silent or false
-	if isfolder("noclipov/") and isfile("noclipov/" .. path) then
+	if Library.check_noclipov(path) then
 		local success, result = pcall(readfile, "noclipov/" .. path)
 		if success then
 			local fn, err = loadstring(result)
@@ -154,6 +172,20 @@ Library.load_file = function(path, silent, instant)
 		end
     else
         return false
+	end
+end
+Library.write_file = function(path, content, rewrite)
+	path = check_path_is_noclipov(path and path or "test.txt")
+	content = content or "test text for no reason"
+	rewrite = rewrite or false
+	if Library.check_noclipov(path) then
+		if rewrite then
+			writefile(path, content)
+		else
+			appendfile(path, content)
+		end
+	else
+		writefile(path, content)
 	end
 end
 Library.load_module = function(module_name, instant)
@@ -181,31 +213,7 @@ Library.round = function(num, numDecimalPlaces)
 end
 Library.to_letters = function(num, DecimalPlaces)
 	DecimalPlaces = DecimalPlaces or 0
-	if num >= 1e78 then num = num / 1e78
-		return Library.round(num, DecimalPlaces).."QiVi"
-	elseif num >= 1e75 then num = num / 1e75
-		return Library.round(num, DecimalPlaces).."QaVi"
-	elseif num >= 1e72 then num = num / 1e72
-		return Library.round(num, DecimalPlaces).."TVi"
-	elseif num >= 1e69 then num = num / 1e69
-		return Library.round(num, DecimalPlaces).."DVi"
-	elseif num >= 1e66 then num = num / 1e66
-		return Library.round(num, DecimalPlaces).."UVi"
-	elseif num >= 1e63 then num = num / 1e63
-		return Library.round(num, DecimalPlaces).."Vi"
-	elseif num >= 1e60 then num = num / 1e60
-		return Library.round(num, DecimalPlaces).."NoV"
-	elseif num >= 1e57 then num = num / 1e57
-		return Library.round(num, DecimalPlaces).."OcDc"
-	elseif num >= 1e54 then num = num / 1e54
-		return Library.round(num, DecimalPlaces).."SpDc"
-	elseif num >= 1e51 then num = num / 1e51
-		return Library.round(num, DecimalPlaces).."SxDc"
-	elseif num >= 1e48 then num = num / 1e48
-		return Library.round(num, DecimalPlaces).."QiDc"
-	elseif num >= 1e45 then num = num / 1e45
-		return Library.round(num, DecimalPlaces).."QaDc"
-	elseif num >= 1e42 then num = num / 1e42
+	if num >= 1e42 then num = num / 1e42
 		return Library.round(num, DecimalPlaces).."TDc"
 	elseif num >= 1e39 then num = num / 1e39
 		return Library.round(num, DecimalPlaces).."DDc"
@@ -239,7 +247,6 @@ end
 Library.format = function(string, ...)
 	return string:format(...)
 end
-
 
 Library.simple_spy = function()
     msg.Mini("Purple", "Simple Spy: Loading", 2)
