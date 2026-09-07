@@ -11,8 +11,8 @@ Library.dist_to = function(pos)
     if typeof(pos) == 'Vector3' then pos = pos
     elseif typeof(pos) == 'Instance' then
         if pos:IsA('Part') or pos:IsA('MeshPart') then pos = pos.Position
-        elseif pos:IsA('Model') then pos = pos.PrimaryPart.Position
-        elseif pos:IsA('Player') then pos = pos.Character.PrimaryPart.Position end
+        elseif pos:IsA('Model') and pos.PrimaryPart then pos = pos.PrimaryPart.Position
+        elseif pos:IsA('Player') and pos.Character and pos.Character.PrimaryPart then pos = pos.Character.PrimaryPart.Position end
     end
     return math.floor(((game.Players.LocalPlayer.Character.PrimaryPart).Position - pos).magnitude) or 0
 end
@@ -28,18 +28,22 @@ Library.teleport = function(pos, spread)
 end
 getgenv().keybinds_handler = nil
 Library.setup_keybinds = function(keybinds)
-	if getgenv().keybinds_handler then getgenv().keybinds_handler:Disconnect() end
+	local laststate = false
+	if getgenv().keybinds_handler then laststate =  true; getgenv().keybinds_handler:Disconnect() end
 	local keys = {}
-	for key, callback in pairs(keybinds) do if not callback then continue end table.insert(keys, key) end
+	for key, callback in pairs(keybinds) do if not callback then continue end; table.insert(keys, key) end
 	getgenv().keybinds_handler = UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		local key = input.KeyCode
 		if keybinds[key.Name] then keybinds[key.Name]() end
 	end)
-	msg.New("Purple", "Information", ("Available keybinds are: %s"):format(table.concat(keys, ' | ')), 5)
+	msg.New("Purple", "Information", (laststate and "Updated keybinds are: %s" or "Available keybinds are: %s"):format(table.concat(keys, ' | ')), 5)
 end
 Library.is_moving = function(humanoid)
     if not humanoid then return false end
-	return humanoid.MoveDirection.Magnitude == 0 and humanoid:GetState() ~= Enum.HumanoidStateType.Jumping and humanoid:GetState() ~= Enum.HumanoidStateType.FreeFall 
+	return humanoid.MoveDirection.Magnitude == 0 and humanoid:GetState() ~= Enum.HumanoidStateType.Jumping and humanoid:GetState() ~= Enum.HumanoidStateType.Freefall 
+end
+Library.is_firstperson = function()
+	return lp:DistanceFromCharacter(game.workspace.CurrentCamera.CFrame.Position) < 1; 
 end
 Library.is_alive = function(ply)
 	if not ply.Character then return false end
@@ -95,7 +99,7 @@ Library.equip_tool = function(name, instance)
 		lp.Character:WaitForChild("Humanoid"):UnequipTools()
 	end
 end
-Library.remove_tool = function(nam, instance)
+Library.remove_tool = function(name, instance)
 	if not lp.Character then return end
 	if name and lp.Backpack:FindFirstChild(name) or instance then
 		(name and lp.Backpack[name] or instance):Destroy()
@@ -137,9 +141,17 @@ Library.load_file = function(path, silent, instant)
 		local success, result = pcall(readfile, "noclipov/" .. path)
 		if success then
 			local fn, err = loadstring(result)
-			if fn then if not silent then msg.Mini("Mint", "Загружаем "..path, 1) end if instant then return fn() else return fn end else msg.Mini("Coral", "Ошибка компиляции файла " .. path .. ": " .. tostring(err), 3) end
+			if fn then 
+                if not silent then msg.Mini("Mint", "Загружаем "..path, 1) end
+                if instant then return fn()
+                else return fn end 
+            else 
+                msg.Mini("Coral", "Ошибка компиляции файла " .. path .. ": " .. tostring(err), 3) 
+                return false
+            end
 		else
 			msg.Mini("Coral", "Не удалось прочитать файл " .. path, 3)
+            return false
 		end
     else
         return false
@@ -171,57 +183,57 @@ end
 Library.to_letters = function(num, DecimalPlaces)
 	DecimalPlaces = DecimalPlaces or 0
 	if num >= 1e78 then num = num / 1e78
-		return Library.Round(num, DecimalPlaces).."QiVi"
+		return Library.round(num, DecimalPlaces).."QiVi"
 	elseif num >= 1e75 then num = num / 1e75
-		return Library.Round(num, DecimalPlaces).."QaVi"
+		return Library.round(num, DecimalPlaces).."QaVi"
 	elseif num >= 1e72 then num = num / 1e72
-		return Library.Round(num, DecimalPlaces).."TVi"
+		return Library.round(num, DecimalPlaces).."TVi"
 	elseif num >= 1e69 then num = num / 1e69
-		return Library.Round(num, DecimalPlaces).."DVi"
+		return Library.round(num, DecimalPlaces).."DVi"
 	elseif num >= 1e66 then num = num / 1e66
-		return Library.Round(num, DecimalPlaces).."UVi"
+		return Library.round(num, DecimalPlaces).."UVi"
 	elseif num >= 1e63 then num = num / 1e63
-		return Library.Round(num, DecimalPlaces).."Vi"
+		return Library.round(num, DecimalPlaces).."Vi"
 	elseif num >= 1e60 then num = num / 1e60
-		return Library.Round(num, DecimalPlaces).."NoV"
+		return Library.round(num, DecimalPlaces).."NoV"
 	elseif num >= 1e57 then num = num / 1e57
-		return Library.Round(num, DecimalPlaces).."OcDc"
+		return Library.round(num, DecimalPlaces).."OcDc"
 	elseif num >= 1e54 then num = num / 1e54
-		return Library.Round(num, DecimalPlaces).."SpDc"
+		return Library.round(num, DecimalPlaces).."SpDc"
 	elseif num >= 1e51 then num = num / 1e51
-		return Library.Round(num, DecimalPlaces).."SxDc"
+		return Library.round(num, DecimalPlaces).."SxDc"
 	elseif num >= 1e48 then num = num / 1e48
-		return Library.Round(num, DecimalPlaces).."QiDc"
+		return Library.round(num, DecimalPlaces).."QiDc"
 	elseif num >= 1e45 then num = num / 1e45
-		return Library.Round(num, DecimalPlaces).."QaDc"
+		return Library.round(num, DecimalPlaces).."QaDc"
 	elseif num >= 1e42 then num = num / 1e42
-		return Library.Round(num, DecimalPlaces).."TDc"
+		return Library.round(num, DecimalPlaces).."TDc"
 	elseif num >= 1e39 then num = num / 1e39
-		return Library.Round(num, DecimalPlaces).."DDc"
+		return Library.round(num, DecimalPlaces).."DDc"
 	elseif num >= 1e36 then num = num / 1e36
-		return Library.Round(num, DecimalPlaces).."UDc"
+		return Library.round(num, DecimalPlaces).."UDc"
 	elseif num >= 1e33 then num = num / 1e33
-		return Library.Round(num, DecimalPlaces).."Dc"
+		return Library.round(num, DecimalPlaces).."Dc"
 	elseif num >= 1e30 then num = num / 1e30
-		return Library.Round(num, DecimalPlaces).."No"
+		return Library.round(num, DecimalPlaces).."No"
 	elseif num >= 1e27 then num = num / 1e27
-		return Library.Round(num, DecimalPlaces).."Oc"
+		return Library.round(num, DecimalPlaces).."Oc"
 	elseif num >= 1e24 then num = num / 1e24
-		return Library.Round(num, DecimalPlaces).."Sp"
+		return Library.round(num, DecimalPlaces).."Sp"
 	elseif num >= 1e21 then num = num / 1e21
-		return Library.Round(num, DecimalPlaces).."Sx"
+		return Library.round(num, DecimalPlaces).."Sx"
 	elseif num >= 1e18 then num = num / 1e18
-		return Library.Round(num, DecimalPlaces).."Qi"
+		return Library.round(num, DecimalPlaces).."Qi"
 	elseif num >= 1e15 then num = num / 1e15
-		return Library.Round(num, DecimalPlaces).."Qa"
+		return Library.round(num, DecimalPlaces).."Qa"
 	elseif num >= 1e12 then num = num / 1e12
-		return Library.Round(num, DecimalPlaces).."T"
+		return Library.round(num, DecimalPlaces).."T"
 	elseif num >= 1e09 then num = num / 1e09
-		return Library.Round(num, DecimalPlaces).."B"
+		return Library.round(num, DecimalPlaces).."B"
 	elseif num >= 1e06 then num = num / 1e06
-		return Library.Round(num, DecimalPlaces).."M"
+		return Library.round(num, DecimalPlaces).."M"
 	elseif num >= 1e03 then num = num / 1e03
-		return Library.Round(num, DecimalPlaces).."K"
+		return Library.round(num, DecimalPlaces).."K"
 	else return num
 	end
 end
@@ -249,6 +261,7 @@ local alias_list = {
 	["teleport"] = {"teleport","tp","setpos"},
 	["setup_keybinds"] = {"setupKeyBinds","KeyBinds","keybinds", "keys", "binds", "setupKeys", "setupBinds"},
 	["is_moving"] = {"isMoving","IsMoving","ismoving"},
+	["is_firstperson"] = {"isFirstperson","IsFirstperson","firstperson", "fp", "FP"},
 	["is_alive"] = {"isAlive","IsAlive","isalive"},
 	["has_value"] = {"hasValue","HasValue","hasvalue"},
 	["get_ping"] = {"getPing","GetPing","getping"},
@@ -265,7 +278,7 @@ local alias_list = {
 	["toggle_coregui"] = {"toggleCG","toggleCoreGui","CoreGui", "coregui"},
 	["load_file"] = {"loadFile","LoadFile","loadfile", "load"},
 	["load_module"] = {"loadModule","LoadModule","loadmodule", "module"},
-	["round"] = {"Round"},
+	["round"] = {"round"},
 	["to_letters"] = {"toLetters","ToLetters","toletters", "Letters", "letters", "format"},
 
 	["simple_spy"] = {"simpleSpy","SimpleSpy","simplespy", "ss"},
