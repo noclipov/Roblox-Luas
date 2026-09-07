@@ -27,7 +27,7 @@ end
 
 function WebSocketManager.new(url: string, idleTimeout: number?)
 	-- Проверяем, существует ли уже запущенный менеджер в глобальной среде эксплойта
-	local sharedEnv = getgenv and _G or _G
+	local sharedEnv = getgenv and getgenv() or getgenv()
 	if sharedEnv.__ActiveWebSocketManager then
 		pcall(function()
 			-- Жестко закрываем старый сокет предыдущего запуска скрипта
@@ -278,7 +278,7 @@ function WebSocketManager:Stop()
 	self.isIdleClosed = false
 	self.sessionStartTime = nil
 	
-	local sharedEnv = getgenv and _G or _G
+	local sharedEnv = getgenv and getgenv() or getgenv()
 	if sharedEnv.__ActiveWebSocketManager == self then
 		sharedEnv.__ActiveWebSocketManager = nil
 	end

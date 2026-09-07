@@ -4,13 +4,13 @@ local LINK = "https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/fps_co
 local msg = loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/Libs/notify.lua"))()
 if not isrbxactive or not setfpscap or not getfpscap then msg.Mini("Coral", "Your executor rlly sucks", 0); return end
 local maxfps = getfpscap and getfpscap() or 120
-local idle_fps = _G.idle_fps and _G.idle_fps or 5
-_G.idle_fps = nil
-if not _G.FPSControlLoaded then
-	_G.FPSControlLoaded = true
+local idle_fps = getgenv().idle_fps and getgenv().idle_fps or 5
+getgenv().idle_fps = nil
+if not getgenv().FPSControlLoaded then
+	getgenv().FPSControlLoaded = true
 	local last_state
 	local fpsthread = task.spawn(function()
-		while _G.FPSControlLoaded do task.wait()
+		while getgenv().FPSControlLoaded do task.wait()
 			local new_state = isrbxactive()
 			if new_state ~= last_state then
 				last_state = new_state
@@ -19,7 +19,7 @@ if not _G.FPSControlLoaded then
 			end
 		end
 	end)
-	game.Players.PlayerRemoving:Connect(function(ply) if ply == game.Players.LocalPlayer then _G.FPSControlLoaded = false; task.cancel(fpsthread); setfpscap(maxfps) end end)
-	queue_on_teleport('_G.FPSControlLoaded = false; task.wait(0.2); loadstring(game:HttpGet("'..LINK..'"))()')
+	game.Players.PlayerRemoving:Connect(function(ply) if ply == game.Players.LocalPlayer then getgenv().FPSControlLoaded = false; task.cancel(fpsthread); setfpscap(maxfps) end end)
+	queue_on_teleport('getgenv().FPSControlLoaded = false; task.wait(0.2); loadstring(game:HttpGet("'..LINK..'"))()')
 	msg.Mini("Purple", "FPS-Control: Loaded", 2)
 end

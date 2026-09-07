@@ -26,13 +26,12 @@ Library.teleport = function(pos, spread)
 	lp.Character.PrimaryPart.CFrame = CFrame.new(x,y,z)
 	return current_position
 end
-_G.keybinds_handler = nil
 Library.setup_keybinds = function(keybinds)
 	local laststate = false
-	if _G.keybinds_handler then laststate =  true; _G.keybinds_handler:Disconnect() end
+	if getgenv().keybinds_handler then laststate =  true; getgenv().keybinds_handler:Disconnect() end
 	local keys = {}
 	for key, callback in pairs(keybinds) do if not callback then continue end; table.insert(keys, key) end
-	_G.keybinds_handler = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	getgenv().keybinds_handler = UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		local key = input.KeyCode
 		if keybinds[key.Name] then keybinds[key.Name]() end
 	end)
@@ -237,6 +236,9 @@ Library.to_letters = function(num, DecimalPlaces)
 	else return num
 	end
 end
+Library.format = function(string, ...)
+	return string:format(...)
+end
 
 
 Library.simple_spy = function()
@@ -252,7 +254,7 @@ Library.anti_afk = function()
 end
 Library.fps_control = function(fps_limit)
 	fps_limit = fps_limit or 5
-	_G.idle_fps = fps_limit
+	getgenv().idle_fps = fps_limit
     loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/fps_control.lua"))()
 end
 

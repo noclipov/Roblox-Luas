@@ -2,7 +2,7 @@
 while not game.IsLoaded do task.wait() end
 local LINK = "https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/anti_afk.lua"
 local msg = loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/Libs/notify.lua"))()
-if not _G.AntiAfkLoaded then
+if not getgenv().AntiAfkLoaded then
 	local gcn = getconnections or get_signal_cons
 	if gcn then
 		for i, v in gcn(game.Players.LocalPlayer.Idled) do
@@ -20,7 +20,7 @@ if not _G.AntiAfkLoaded then
 		VirtualUser:CaptureController()
 		VirtualUser:ClickButton2(Vector2.new())
 	end)
-	_G.AntiAfkLoaded = true
-	queue_on_teleport('_G.AntiAfkLoaded = false; task.wait(0.2); loadstring(game:HttpGet("'..LINK..'"))()')
+	getgenv().AntiAfkLoaded = true
+	queue_on_teleport('getgenv().AntiAfkLoaded = false; task.wait(0.2); loadstring(game:HttpGet("'..LINK..'"))()')
 	msg.Mini("Purple", "Anti-AFK: Loaded", 2)
 end
