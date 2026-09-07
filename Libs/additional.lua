@@ -254,7 +254,7 @@ Library.simple_spy = function()
 end
 Library.dex_explorer = function()
     msg.Mini("Purple", "Dex Explorer: Loading", 5)
-    loadstring(game:HttpGet("https://github.com/AZYsGithub/DexPlusPlus/releases/latest/download/out.lua"))()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/Diffone7/r/refs/heads/main/tsb/dex"))()
 end
 Library.anti_afk = function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/anti_afk.lua"))()
