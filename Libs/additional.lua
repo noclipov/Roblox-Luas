@@ -2,6 +2,7 @@ local Library = {}
 local TeleportService = game:GetService('TeleportService')
 local ChatService = game:GetService("TextChatService")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 local msg = loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/refs/heads/main/Libs/notify.lua"))()
 local pls = game.Players
 local lp = pls.LocalPlayer
@@ -31,10 +32,17 @@ Library.setup_keybinds = function(keybinds)
 	local laststate = false
 	if getgenv().keybinds_handler then laststate =  true; getgenv().keybinds_handler:Disconnect() end
 	local keys = {}
-	for key, callback in pairs(keybinds) do if not callback then continue end; table.insert(keys, key) end
+	for key, data in pairs(keybinds) do if not data['callback'] then continue end; table.insert(keys, key) end
 	getgenv().keybinds_handler = UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		local key = input.KeyCode
-		if keybinds[key.Name] then keybinds[key.Name]() end
+		if keybinds[key.Name] and ((keybinds[key.Name]['gpc'] and not gameProcessed) or not keybinds[key.Name]['gpc']) then keybinds[key.Name]['callback']() end
+	end)
+	msg.New("Purple", "Information", (laststate and "Updated keybinds are: %s" or "Available keybinds are: %s"):format(table.concat(keys, ' | ')), 5)
+end
+Library.screen_stretch = function()
+	if getgenv().screen_stretch then getgenv().screen_stretch:Disconnect() end
+	getgenv().screen_stretch = RunService.RenderStepped:Connect(function()
+		workspace.CurrentCamera.CFrame = workspace.CurrentCamera.CFrame * CFrame.new(0,0,0,1,0,0,0,0.8,0,0,0,1)
 	end)
 	msg.New("Purple", "Information", (laststate and "Updated keybinds are: %s" or "Available keybinds are: %s"):format(table.concat(keys, ' | ')), 5)
 end
@@ -275,7 +283,7 @@ local alias_list = {
 	["has_value"] = {"hasValue","HasValue","hasvalue"},
 	["get_ping"] = {"getPing","GetPing","getping"},
 	["get_friends"] = {"getFriend","GetFriends","getfriends"},
-	["join_place"] = {"joinPlace","JoinPlace","joinplace"},
+	["join_place"] = {"joinPlace","JoinPlace","joinplace", "join", "jp"},
 	["hl_player"] = {"hlPlayer","HLPlayer","hlplayer", "hl", "HL"},
 	["unhl_player"] = {"unhlPlayer","UnHLPlayer","unhlplayer", "unhl", "unHL"},
 	["get_teleport"] = {"getTeleport","GetTeleport","getteleport"},
