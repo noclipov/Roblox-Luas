@@ -39,10 +39,11 @@ Library.setup_keybinds = function(keybinds)
 	end)
 	msg.New("Purple", "Information", (laststate and "Updated keybinds are: %s" or "Available keybinds are: %s"):format(table.concat(keys, ' | ')), 5)
 end
-Library.screen_stretch = function()
-	if getgenv().screen_stretch then getgenv().screen_stretch:Disconnect() end
+Library.screen_stretch = function(value)
+	value=math.clamp(value,0,1)
+	if getgenv().screen_stretch then getgenv().screen_stretch:Disconnect(); getgenv().screen_stretch = nil; return end
 	getgenv().screen_stretch = RunService.RenderStepped:Connect(function()
-		workspace.CurrentCamera.CFrame = workspace.CurrentCamera.CFrame * CFrame.new(0,0,0,1,0,0,0,0.8,0,0,0,1)
+		workspace.CurrentCamera.CFrame = workspace.CurrentCamera.CFrame * CFrame.new(0,0,0,1,0,0,0,value,0,0,0,1)
 	end)
 	msg.New("Purple", "Information", (laststate and "Updated keybinds are: %s" or "Available keybinds are: %s"):format(table.concat(keys, ' | ')), 5)
 end
@@ -277,6 +278,7 @@ local alias_list = {
 	["dist_to"] = {"distTo","DistTo","distto"},
 	["teleport"] = {"teleport","tp","setpos"},
 	["setup_keybinds"] = {"setupKeyBinds","KeyBinds","keybinds", "keys", "binds", "setupKeys", "setupBinds"},
+	["screen_stretch"] = {"stretch","screenstretch","ScreenStretch", "Screenstretch", "screenStretch"},
 	["is_moving"] = {"isMoving","IsMoving","ismoving"},
 	["is_firstperson"] = {"isFirstperson","IsFirstperson","firstperson", "fp", "FP"},
 	["is_alive"] = {"isAlive","IsAlive","isalive"},
