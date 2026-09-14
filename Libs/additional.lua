@@ -40,12 +40,13 @@ Library.setup_keybinds = function(keybinds)
 	msg.New("Purple", "Information", (laststate and "Updated keybinds are: %s" or "Available keybinds are: %s"):format(table.concat(keys, ' | ')), 5)
 end
 Library.screen_stretch = function(value)
-	value = value or 0.8; value=math.clamp(value,0,1)
-	if getgenv().screen_stretch then getgenv().screen_stretch:Disconnect(); getgenv().screen_stretch = nil; return end
-	getgenv().screen_stretch = RunService.RenderStepped:Connect(function()
-		workspace.CurrentCamera.CFrame = workspace.CurrentCamera.CFrame * CFrame.new(0,0,0,1,0,0,0,value,0,0,0,1)
-	end)
-	msg.New("Purple", "Information", (laststate and "Updated keybinds are: %s" or "Available keybinds are: %s"):format(table.concat(keys, ' | ')), 5)
+	if getgenv().screen_stretch then getgenv().screen_stretch:Disconnect(); getgenv().screen_stretch = nil end
+	if value then
+		value=math.clamp(value,0,1)
+		getgenv().screen_stretch = RunService.RenderStepped:Connect(function()
+			workspace.CurrentCamera.CFrame = workspace.CurrentCamera.CFrame * CFrame.new(0,0,0,1,0,0,0,value,0,0,0,1)
+		end)
+	end
 end
 Library.is_moving = function(humanoid)
     if not humanoid then return false end
@@ -182,6 +183,9 @@ Library.load_file = function(path, silent, instant)
     else
         return false
 	end
+end
+Library.try_game = function()
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/"..game.PlaceId..".lua"))()
 end
 Library.write_file = function(path, content, rewrite)
 	path = check_path_is_noclipov(path and path or "test.txt")
