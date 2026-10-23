@@ -1,33 +1,72 @@
+-- [[ Noclipov Settings Library v2.0 ]] --
 local HttpService = game:GetService("HttpService")
-local Library = {}
-Library.Link = "https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/Libs/settings.lua"
--- loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/Libs/settings.lua"))()
-local function encode(table: table) return HttpService:JSONEncode(table) end
-local function decode(table: table) return HttpService:JSONDecode(table) end
-local function check() if writefile and readfile and isfile and delfile then return true end return false end
-Library.isfile = function(name: string)
-    if check() then
-        return isfile(name)
-    else return end
+local settings = {}
+local _cache = {}
+
+local function check_fs()
+    return type(writefile) == "function" and type(readfile) == "function" 
+       and type(isfile) == "function" and type(delfile) == "function"
 end
-Library.save = function(name: string, table: table)
-    table = table or {}
-    if check() then
-        if string.sub(name, -5) ~= ".json" then name = name..".json" end
-        writefile(name, encode(table))
-    else return end
+
+local function ensure_ext(name)
+    if type(name) ~= "string" then return nil end
+    if string.sub(name, -5):lower() ~= ".json" then
+        return name .. ".json"
+    end
+    return name
 end
-Library.get = function(name: string)
-    if check() then
-        if isfile(name) then
-            if string.sub(name, -5) ~= ".json" then name = name..".json" end
-            return decode(readfile(name))
-        end
-    else return end
+
+function settings.isfile(name)
+    if not check_fs() then return false end
+    local fname = ensure_ext(name)
+    if not fname then return false end
+    local ok, res = pcall(isfile, fname)
+    return ok and res or false
 end
-Library.delfile = function(name: string)
-    if check() and Library.isfile(name) then
-        delfile(name)
-    else return end
+
+function settings.save(name, tbl)
+    if not check_fs() then return false end
+    local fname = ensure_ext(name)
+    if not fname or type(tbl) ~= "table" then return false end
+    
+    local ok, encoded = pcall(function() return HttpService:JSONEncode(tbl) end)
+    if not ok or not encoded then return false end
+    
+    local writeOk = pcall(writefile, fname, encoded)
+    if writeOk then _cache[fname] = tbl end
+    return writeOk
 end
-return Library
+
+function settings.get(name)
+    if not check_fs() then return nil end
+    local fname = ensure_ext(name)
+    if not fname then return nil end
+    
+    if _cache[fname] then return _cache[fname] end
+    if not settings.isfile(fname) then return nil end
+    
+    local ok, data = pcall(readfile, fname)
+    if not ok or not data then return nil end
+    
+    local decodeOk, decoded = pcall(function() return HttpService:JSONDecode(data) end)
+    if decodeOk and decoded then
+        _cache[fname] = decoded
+    end
+    return decodeOk and decoded or nil
+end
+
+function settings.delfile(name)
+    if not check_fs() then return false end
+    local fname = ensure_ext(name)
+    if not fname or not settings.isfile(fname) then return false end
+    
+    local ok = pcall(delfile, fname)
+    if ok then _cache[fname] = nil end
+    return ok
+end
+
+function settings.clear_cache()
+    _cache = {}
+end
+
+return settings
