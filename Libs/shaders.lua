@@ -240,3 +240,5 @@ function Shaders.Cleanup()
         Shaders.FogSaved = nil
     end
 end
+
+return Shaders
