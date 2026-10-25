@@ -528,7 +528,7 @@ end)
 -- ═══════════════════════════════════════════════════════════════════════
 -- 20. INITIALIZATION
 -- ═══════════════════════════════════════════════════════════════════════
-msg = Library.load_module("notify.lua", true)
+msg = Library.load_module("notify.lua")
 if not msg then
     msg = {
         Mini = function(color, text) print(("[%s] %s"):format(tostring(color), tostring(text))) end,
