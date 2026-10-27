@@ -449,9 +449,9 @@ register("load_module", function(module_name, instant, force_update)
     end
 
     if not from_cache then
-        msg.Mini("Mint", "Загружен модуль " .. module_name .. " (GitHub)", 1)
+        notify("Mint", "Загружен модуль " .. module_name .. " (GitHub)", 1)
     else
-        msg.Mini("Mint", "Загружен модуль " .. module_name .. " (cache)", 1)
+        notify("Mint", "Загружен модуль " .. module_name .. " (cache)", 1)
     end
 
     return fn
