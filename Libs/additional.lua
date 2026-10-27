@@ -71,14 +71,7 @@ local HANDLERS = {
 -- ═══════════════════════════════════════════════════════════════════════
 -- 03. PRIVATE HELPERS
 -- ═══════════════════════════════════════════════════════════════════════
-local function notify(color, text, duration)
-    if msg and msg.Mini then msg.Mini(color, text, duration) end
-end
-
-local function notify_info(text, duration)
-    duration = duration or 5
-    if msg and msg.New then msg.New("Purple", "Information", text, duration) end
-end
+local notify, notify_info
 
 local function http_get(url)
     local ok, res = pcall(game.HttpGet, game, url)
@@ -430,21 +423,21 @@ register("load_module", function(module_name, instant, force_update)
         end
 
         if not source then
-            msg.Mini("Coral", "Не удалось скачать модуль " .. module_name, 3)
+            notify("Coral", "Не удалось скачать модуль " .. module_name, 3)
             return false
         end
 
         -- сохраняем кэш (не критично, если не получится — работаем из памяти)
         local saved = pcall(writefile, local_path, source)
         if not saved then
-            msg.Mini("Coral", "Не удалось сохранить кэш модуля " .. module_name, 3)
+            notify("Coral", "Не удалось сохранить кэш модуля " .. module_name, 3)
         end
     end
 
     -- 3) Компилируем
     local fn, err = loadstring(source)
     if not fn then
-        msg.Mini("Coral", "Ошибка компиляции модуля " .. module_name .. ": " .. tostring(err), 3)
+        notify("Coral", "Ошибка компиляции модуля " .. module_name .. ": " .. tostring(err), 3)
         return false
     end
 
@@ -573,6 +566,14 @@ if not msg then
             print(("[%s/%s] %s"):format(tostring(color), tostring(category), tostring(text)))
         end,
     }
+end
+notify = function(color, text, duration)
+    if msg and msg.Mini then msg.Mini(color, text, duration) end
+end
+
+notify_info = function(text, duration)
+    duration = duration or 5
+    if msg and msg.New then msg.New("Purple", "Information", text, duration) end
 end
 
 return Library
