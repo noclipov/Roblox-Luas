@@ -4,7 +4,7 @@
     Structure (search for section numbers to jump):
       01. Services & Constants
       02. Internal State
-      03. Private Helpers
+      03. Private Helpers  (notify wrappers, http, fs)
       04. Method Registration
       05. Shared Helpers
       06. Position & Movement
@@ -17,7 +17,7 @@
       13. Filesystem
       14. Module Loader
       15. Numbers & Formatting
-      16. Teleport & Join
+      16. Teleport, Join & Scripts
       17. CoreGui
       18. External Scripts
       19. Lifecycle
@@ -38,21 +38,21 @@ local pls = game.Players
 local lp  = pls.LocalPlayer
 
 local URLS = {
-    library     = "https://raw.githubusercontent.com/noclipov/Roblox-Luas/refs/heads/main/Libs/additional.lua",
+    library      = "https://raw.githubusercontent.com/noclipov/Roblox-Luas/refs/heads/main/Libs/additional.lua",
     modules_base = {
         "https://raw.githubusercontent.com/noclipov/Roblox-Luas/refs/heads/main/Libs/",
         "https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/",
     },
-    try_game    = "https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/",
-    simple_spy  = "https://raw.githubusercontent.com/78n/SimpleSpy/main/SimpleSpySource.lua",
-    dex         = "https://raw.githubusercontent.com/Diffone7/r/refs/heads/main/tsb/dex",
-    anti_afk    = "https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/anti_afk.lua",
-    fps_control = "https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/fps_control.lua",
+    try_game     = "https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/",
+    simple_spy   = "https://raw.githubusercontent.com/78n/SimpleSpy/main/SimpleSpySource.lua",
+    dex          = "https://raw.githubusercontent.com/Diffone7/r/refs/heads/main/tsb/dex",
+    anti_afk     = "https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/anti_afk.lua",
+    fps_control  = "https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/fps_control.lua",
 }
 
 local PATHS = {
     noclipov     = "noclipov/",
-    modules_root = "Noclipov/",
+    modules_root = "Noclipov",
     modules      = "Noclipov/modules/",
 }
 
@@ -61,7 +61,7 @@ Library.Link = URLS.library
 -- ═══════════════════════════════════════════════════════════════════════
 -- 02. INTERNAL STATE
 -- ═══════════════════════════════════════════════════════════════════════
-local msg = nil
+local msg = nil   -- populated once notify.lua finishes loading
 
 local HANDLERS = {
     keybinds = "keybinds_handler",
@@ -71,7 +71,24 @@ local HANDLERS = {
 -- ═══════════════════════════════════════════════════════════════════════
 -- 03. PRIVATE HELPERS
 -- ═══════════════════════════════════════════════════════════════════════
-local notify, notify_info
+
+-- Safe notify wrappers — work even before notify.lua is loaded.
+local function notify(color, text, duration)
+    if msg and msg.Mini then
+        pcall(msg.Mini, color, text, duration)
+    else
+        print(("[%s] %s"):format(tostring(color), tostring(text)))
+    end
+end
+
+local function notify_info(text, duration)
+    duration = duration or 5
+    if msg and msg.New then
+        pcall(msg.New, "Purple", "Information", text, duration)
+    else
+        print(("[Info] %s"):format(tostring(text)))
+    end
+end
 
 local function http_get(url)
     local ok, res = pcall(game.HttpGet, game, url)
@@ -81,6 +98,7 @@ local function http_get(url)
 end
 
 local function ensure_folder(path)
+    path = path:gsub("/+$", "")
     if isfolder(path) then return true end
     pcall(makefolder, path)
     return isfolder(path)
@@ -99,13 +117,17 @@ end
 
 local function set_handler(name, handler)
     local prev = getgenv()[name]
-    if prev then prev:Disconnect() end
+    if prev and typeof(prev) == "RBXScriptConnection" then
+        pcall(prev.Disconnect, prev)
+    end
     getgenv()[name] = handler
 end
 
 local function clear_handler(name)
     local h = getgenv()[name]
-    if h then h:Disconnect() end
+    if h and typeof(h) == "RBXScriptConnection" then
+        pcall(h.Disconnect, h)
+    end
     getgenv()[name] = nil
 end
 
@@ -149,12 +171,18 @@ register("dist_to", function(pos)
         end
     end
     if typeof(pos) ~= "Vector3" then return 0 end
-    return math.floor((char.PrimaryPart.Position - pos).Magnitude) or 0
+    return math.floor((char.PrimaryPart.Position - pos).Magnitude)
 end, {"distTo", "DistTo", "distto"})
 
 register("teleport", function(pos, spread)
     local char = get_character()
     if not char then return end
+    if typeof(pos) == "Instance" then
+        if pos:IsA("BasePart") then pos = pos.Position
+        elseif pos:IsA("Model") and pos.PrimaryPart then pos = pos.PrimaryPart.Position
+        end
+    end
+    if typeof(pos) ~= "Vector3" then return end
     spread = spread or 0
     local prev = char.PrimaryPart.CFrame
     local x = spread > 0 and (pos.X + math.random(-spread, spread)) or pos.X
@@ -189,6 +217,7 @@ register("is_firstperson", function()
 end, {"isFirstperson", "IsFirstperson", "firstperson", "fp", "FP"})
 
 register("is_alive", function(ply)
+    ply = ply or lp
     if not ply.Character then return false end
     local humanoid = ply.Character:FindFirstChild("Humanoid")
     return humanoid ~= nil and humanoid.Health > 0
@@ -198,14 +227,20 @@ end, {"isAlive", "IsAlive", "isalive"})
 -- 08. PLAYERS
 -- ═══════════════════════════════════════════════════════════════════════
 register("get_ping", function()
-    return lp:GetNetworkPing() * 2000
+    -- GetNetworkPing returns seconds; ×1000 → ms
+    return math.floor(lp:GetNetworkPing() * 1000)
 end, {"getPing", "GetPing", "getping"})
 
 register("get_friends", function(player)
+    player = player or lp
     local friends = {}
-    for _, v in pairs(pls:GetChildren()) do
-        if v ~= player and player:IsFriendsWith(v.UserId) then
-            table.insert(friends, v)
+    if not player then return friends end
+    for _, v in ipairs(pls:GetPlayers()) do
+        if v ~= player then
+            local ok, is_friend = pcall(function() return player:IsFriendsWith(v.UserId) end)
+            if ok and is_friend then
+                table.insert(friends, v)
+            end
         end
     end
     return friends
@@ -292,14 +327,18 @@ register("setup_keybinds", function(keybinds)
     local laststate = getgenv()[HANDLERS.keybinds] ~= nil
     local keys = {}
     for key, data in pairs(keybinds) do
-        if data.callback then table.insert(keys, key) end
+        if type(data) == "table" and data.callback then
+            table.insert(keys, key)
+        end
     end
+
     set_handler(HANDLERS.keybinds, UserInputService.InputBegan:Connect(function(input, gameProcessed)
         local data = keybinds[input.KeyCode.Name]
-        if data and data.callback and ((data.gpc and not gameProcessed) or not data.gpc) then
-            data.callback()
-        end
+        if not data or not data.callback then return end
+        if data.gpc and gameProcessed then return end
+        pcall(data.callback)
     end))
+
     notify_info((laststate and "Updated keybinds are: %s" or "Available keybinds are: %s")
         :format(table.concat(keys, " | ")))
 end, {"setupKeyBinds", "KeyBinds", "keybinds", "keys", "binds", "setupKeys", "setupBinds"})
@@ -318,7 +357,7 @@ end, {"stretch", "screenstretch", "ScreenStretch", "Screenstretch", "screenStret
 -- 13. FILESYSTEM
 -- ═══════════════════════════════════════════════════════════════════════
 register("check_noclipov", function(file)
-    if not file then return isfolder(PATHS.noclipov) end
+    if not file then return isfolder(PATHS.noclipov:gsub("/+$", "")) end
     return isfile(normalize_noclipov_path(file))
 end)
 
@@ -336,7 +375,14 @@ register("load_file", function(path, silent, instant)
         return false
     end
     if not silent then notify("Mint", "Загружаем " .. path, 1) end
-    if instant then return fn() end
+    if instant then
+        local rok, rerr = pcall(fn)
+        if not rok then
+            notify("Coral", "Ошибка исполнения " .. path .. ": " .. tostring(rerr), 3)
+            return false
+        end
+        return true
+    end
     return fn
 end, {"loadFile", "LoadFile", "loadfile", "load"})
 
@@ -376,65 +422,32 @@ local function download_module(module_name)
 end
 
 register("load_module", function(module_name, instant, force_update)
-    instant      = instant or false
+    module_name  = module_name  or "additional.lua"
+    instant      = instant      or false
     force_update = force_update or false
-    module_name  = module_name or "additional.lua"
 
-    local MODULES_DIR = "Noclipov/modules/"
-    local local_path  = MODULES_DIR .. module_name
-
-    -- создаём структуру папок при первом обращении
-    if not isfolder("Noclipov")            then pcall(makefolder, "Noclipov") end
-    if not isfolder(MODULES_DIR)           then pcall(makefolder, MODULES_DIR) end
-    -- поддержим вложенные пути (Noclipov/modules/sub/foo.lua)
-    local dir_part = module_name:match("^(.*)/[^/]+$")
-    if dir_part then
-        local full = MODULES_DIR .. dir_part
-        if not isfolder(full) then pcall(makefolder, full) end
-    end
+    ensure_module_dirs(module_name)
+    local local_path = PATHS.modules .. module_name
 
     local source = nil
     local from_cache = false
 
-    -- 1) Пытаемся взять локальную копию
-    if not force_update and isfile(local_path) then
-        local ok, content = pcall(readfile, local_path)
-        if ok and type(content) == "string" and #content > 0 then
-            source = content
-            from_cache = true
-        end
+    if not force_update then
+        source = read_cached(local_path)
+        from_cache = source ~= nil
     end
 
-    -- 2) Если кэша нет (или force_update) — качаем с GitHub и сохраняем
     if not source then
-        local urls = {
-            "https://raw.githubusercontent.com/noclipov/Roblox-Luas/refs/heads/main/Libs/" .. module_name,
-            "https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/" .. module_name,
-        }
-
-        for _, url in ipairs(urls) do
-            local ok, res = pcall(game.HttpGet, game, url)
-            if ok and type(res) == "string" and #res > 0
-               and not res:find("404: Not Found", 1, true)
-               and not res:find("<!DOCTYPE", 1, true) then
-                source = res
-                break
-            end
-        end
-
+        source = download_module(module_name)
         if not source then
             notify("Coral", "Не удалось скачать модуль " .. module_name, 3)
             return false
         end
-
-        -- сохраняем кэш (не критично, если не получится — работаем из памяти)
-        local saved = pcall(writefile, local_path, source)
-        if not saved then
+        if not pcall(writefile, local_path, source) then
             notify("Coral", "Не удалось сохранить кэш модуля " .. module_name, 3)
         end
     end
 
-    -- 3) Компилируем
     local fn, err = loadstring(source)
     if not fn then
         notify("Coral", "Ошибка компиляции модуля " .. module_name .. ": " .. tostring(err), 3)
@@ -444,16 +457,12 @@ register("load_module", function(module_name, instant, force_update)
     if instant then
         local ok, result = pcall(fn)
         if ok then return result end
-        -- если модуль вернул функцию-«фабрику» — отдадим её, не роняя вызывающего
-        return fn
+        notify("Coral", "Ошибка исполнения " .. module_name .. ": " .. tostring(result), 3)
+        return fn   -- отдаём функцию-фабрику на случай, если модуль так задуман
     end
 
-    if not from_cache then
-        notify("Mint", "Загружен модуль " .. module_name .. " (GitHub)", 1)
-    else
-        notify("Mint", "Загружен модуль " .. module_name .. " (cache)", 1)
-    end
-
+    notify("Mint", "Загружен модуль " .. module_name ..
+        (from_cache and " (cache)" or " (GitHub)"), 1)
     return fn
 end, {"loadModule", "LoadModule", "loadmodule", "module"})
 
@@ -491,16 +500,18 @@ register("format", function(str, ...)
 end)
 
 -- ═══════════════════════════════════════════════════════════════════════
--- 16. TELEPORT & JOIN
+-- 16. TELEPORT, JOIN & SCRIPTS
 -- ═══════════════════════════════════════════════════════════════════════
 register("join_place", function(placeid, jobid)
     placeid = placeid or game.PlaceId
     jobid   = jobid and tostring(jobid) or jobid
+    local ok, err
     if jobid then
-        TeleportService:TeleportToPlaceInstance(placeid, jobid, lp)
+        ok, err = pcall(TeleportService.TeleportToPlaceInstance, TeleportService, placeid, jobid, lp)
     else
-        TeleportService:Teleport(placeid, lp)
+        ok, err = pcall(TeleportService.Teleport, TeleportService, placeid, lp)
     end
+    if not ok then notify("Coral", "Teleport failed: " .. tostring(err), 3) end
 end, {"joinPlace", "JoinPlace", "joinplace", "join", "jp"})
 
 register("get_teleport", function()
@@ -508,43 +519,86 @@ register("get_teleport", function()
         :format(tostring(game.PlaceId), game.JobId))
 end, {"getTeleport", "GetTeleport", "getteleport"})
 
-register("try_game", function()
+-- как try_game, но с именем скрипта вместо PlaceId
+local function run_source(source, name, instant)
+    local fn, err = loadstring(source)
+    if not fn then
+        notify("Coral", "Ошибка компиляции " .. name .. ": " .. tostring(err), 3)
+        return false
+    end
+    if instant == false then
+        notify("Mint", "Загружен скрипт " .. name, 1)
+        return fn
+    end
+    local ok, rerr = pcall(fn)
+    if not ok then
+        notify("Coral", "Ошибка исполнения " .. name .. ": " .. tostring(rerr), 3)
+        return false
+    end
+    notify("Mint", "Запущен скрипт " .. name, 1)
+    return true
+end
+
+register("try_game", function(instant)
     local source = http_get(URLS.try_game .. game.PlaceId .. ".lua")
-    if source then loadstring(source)() end
+    if not source then return false end
+    return run_source(source, "game(" .. tostring(game.PlaceId) .. ")", instant ~= false)
 end)
+
+register("load_script", function(name, instant)
+    if not name or name == "" then
+        notify("Coral", "load_script: не указано имя", 3)
+        return false
+    end
+    name = tostring(name)
+    if not (name:find("%.lua$") or name:find("%.txt$")) then
+        name = name .. ".lua"
+    end
+    local source = http_get(URLS.try_game .. name)
+    if not source then
+        notify("Coral", "Скрипт не найден: " .. name, 3)
+        return false
+    end
+    -- по умолчанию ведём себя как try_game — сразу исполняем
+    return run_source(source, name, instant == nil and true or instant)
+end, {"loadScript", "LoadScript", "loadscript", "run_script", "runScript", "runscript", "script"})
 
 -- ═══════════════════════════════════════════════════════════════════════
 -- 17. COREGUI
 -- ═══════════════════════════════════════════════════════════════════════
 register("toggle_coregui", function(coregui, state)
-    game.StarterGui:SetCoreGuiEnabled(coregui, state)
+    pcall(game.StarterGui.SetCoreGuiEnabled, game.StarterGui, coregui, state)
 end, {"toggleCG", "toggleCoreGui", "CoreGui", "coregui"})
 
 -- ═══════════════════════════════════════════════════════════════════════
 -- 18. EXTERNAL SCRIPTS
 -- ═══════════════════════════════════════════════════════════════════════
-local function run_remote(url)
+local function run_remote(url, label)
     local source = http_get(url)
-    if source then loadstring(source)() end
+    if not source then
+        notify("Coral", (label or url) .. ": не удалось скачать", 3)
+        return false
+    end
+    return run_source(source, label or url)
 end
 
 register("simple_spy", function()
     notify("Purple", "Simple Spy: Loading", 2)
-    run_remote(URLS.simple_spy)
+    return run_remote(URLS.simple_spy, "SimpleSpy")
 end, {"simpleSpy", "SimpleSpy", "simplespy", "ss"})
 
 register("dex_explorer", function()
     notify("Purple", "Dex Explorer: Loading", 5)
-    run_remote(URLS.dex)
+    return run_remote(URLS.dex, "Dex")
 end, {"dexExplorer", "DexExplorer", "dexexplorer", "de"})
 
 register("anti_afk", function()
-    run_remote(URLS.anti_afk)
+    return run_remote(URLS.anti_afk, "AntiAFK")
 end, {"antiAFK", "AntiAFK", "antiafk", "afk"})
 
 register("fps_control", function(fps_limit)
     getgenv().idle_fps = fps_limit or 5
-    run_remote(URLS.fps_control)
+    return run_remote(URLS.fps_control, "FPSControl")
 end, {"fpsControl", "FPSControl", "fpscontrol", "fps"})
 
 -- ═══════════════════════════════════════════════════════════════════════
@@ -558,22 +612,12 @@ end)
 -- ═══════════════════════════════════════════════════════════════════════
 -- 20. INITIALIZATION
 -- ═══════════════════════════════════════════════════════════════════════
-msg = Library.load_module("notify.lua")
-if not msg then
-    msg = {
-        Mini = function(color, text) print(("[%s] %s"):format(tostring(color), tostring(text))) end,
-        New  = function(color, category, text)
-            print(("[%s/%s] %s"):format(tostring(color), tostring(category), tostring(text)))
-        end,
-    }
-end
-notify = function(color, text, duration)
-    if msg and msg.Mini then msg.Mini(color, text, duration) end
+local ok, mod = pcall(Library.load_module, "notify.lua", true)
+if ok and type(mod) == "table" then
+    msg = mod
 end
 
-notify_info = function(text, duration)
-    duration = duration or 5
-    if msg and msg.New then msg.New("Purple", "Information", text, duration) end
-end
+-- публичный доступ к register для расширения библиотеки
+Library.register = register
 
 return Library
