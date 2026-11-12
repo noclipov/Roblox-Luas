@@ -4,7 +4,7 @@
     Structure (search for section numbers to jump):
       01. Services & Constants
       02. Internal State
-      03. Private Helpers  (notify wrappers, http, fs)
+      03. Private Helpers  (notify, http, fs, pos, script runner)
       04. Method Registration
       05. Shared Helpers
       06. Position & Movement
@@ -61,7 +61,8 @@ Library.Link = URLS.library
 -- ═══════════════════════════════════════════════════════════════════════
 -- 02. INTERNAL STATE
 -- ═══════════════════════════════════════════════════════════════════════
-local msg = nil   -- populated once notify.lua finishes loading
+local msg   = nil   -- populated once notify.lua finishes loading
+local ready = false -- set to true after init; gates verbose notifications
 
 local HANDLERS = {
     keybinds = "keybinds_handler",
@@ -131,6 +132,38 @@ local function clear_handler(name)
     getgenv()[name] = nil
 end
 
+-- Instance | Vector3 | Player → Vector3 (or nil)
+local function resolve_pos(pos)
+    if typeof(pos) == "Vector3" then return pos end
+    if typeof(pos) ~= "Instance" then return nil end
+    if pos:IsA("BasePart") then return pos.Position end
+    if pos:IsA("Model") and pos.PrimaryPart then return pos.PrimaryPart.Position end
+    if pos:IsA("Player") and pos.Character and pos.Character.PrimaryPart then
+        return pos.Character.PrimaryPart.Position
+    end
+    return nil
+end
+
+-- Compile & (optionally) execute source. Returns bool for instant=true,
+-- or the compiled function for instant=false. Handles errors internally.
+local function run_source(source, name, instant)
+    local fn, err = loadstring(source)
+    if not fn then
+        notify("Coral", "Ошибка компиляции " .. name .. ": " .. tostring(err), 3)
+        return false
+    end
+    if instant == false then
+        if ready then notify("Mint", "Загружен скрипт " .. name, 1) end
+        return fn
+    end
+    local ok, rerr = pcall(fn)
+    if not ok then
+        notify("Coral", "Ошибка исполнения " .. name .. ": " .. tostring(rerr), 3)
+        return false
+    end
+    return true
+end
+
 -- ═══════════════════════════════════════════════════════════════════════
 -- 04. METHOD REGISTRATION
 -- ═══════════════════════════════════════════════════════════════════════
@@ -160,35 +193,22 @@ register("get_character", get_character)
 -- ═══════════════════════════════════════════════════════════════════════
 register("dist_to", function(pos)
     local char = get_character()
-    if not pos or not char then return end
-    if typeof(pos) == "Instance" then
-        if pos:IsA("BasePart") then
-            pos = pos.Position
-        elseif pos:IsA("Model") and pos.PrimaryPart then
-            pos = pos.PrimaryPart.Position
-        elseif pos:IsA("Player") and pos.Character and pos.Character.PrimaryPart then
-            pos = pos.Character.PrimaryPart.Position
-        end
-    end
-    if typeof(pos) ~= "Vector3" then return 0 end
+    if not char or not pos then return end
+    pos = resolve_pos(pos)
+    if not pos then return 0 end
     return math.floor((char.PrimaryPart.Position - pos).Magnitude)
 end, {"distTo", "DistTo", "distto"})
 
 register("teleport", function(pos, spread)
     local char = get_character()
     if not char then return end
-    if typeof(pos) == "Instance" then
-        if pos:IsA("BasePart") then pos = pos.Position
-        elseif pos:IsA("Model") and pos.PrimaryPart then pos = pos.PrimaryPart.Position
-        end
-    end
-    if typeof(pos) ~= "Vector3" then return end
+    pos = resolve_pos(pos)
+    if not pos then return end
     spread = spread or 0
     local prev = char.PrimaryPart.CFrame
     local x = spread > 0 and (pos.X + math.random(-spread, spread)) or pos.X
-    local y = pos.Y
     local z = spread > 0 and (pos.Z + math.random(-spread, spread)) or pos.Z
-    char.PrimaryPart.CFrame = CFrame.new(x, y, z)
+    char.PrimaryPart.CFrame = CFrame.new(x, pos.Y, z)
     return prev
 end, {"tp", "setpos"})
 
@@ -196,8 +216,8 @@ register("inside_cube", function(point, cube)
     if not cube then return false end
     point = point or (lp.Character and lp.Character.PrimaryPart)
     if not point then return false end
-    local pos = typeof(point) == "Instance" and point.Position or point
-    if typeof(pos) ~= "Vector3" then return false end
+    local pos = resolve_pos(point)
+    if not pos then return false end
     local rel = cube.CFrame:PointToObjectSpace(pos)
     return math.abs(rel.X) <= cube.Size.X / 2
         and math.abs(rel.Y) <= cube.Size.Y / 2
@@ -357,7 +377,7 @@ end, {"stretch", "screenstretch", "ScreenStretch", "Screenstretch", "screenStret
 -- 13. FILESYSTEM
 -- ═══════════════════════════════════════════════════════════════════════
 register("check_noclipov", function(file)
-    if not file then return isfolder(PATHS.noclipov:gsub("/+$", "")) end
+    if not file then return isfolder((PATHS.noclipov:gsub("/+$", ""))) end
     return isfile(normalize_noclipov_path(file))
 end)
 
@@ -369,21 +389,8 @@ register("load_file", function(path, silent, instant)
         notify("Coral", "Не удалось прочитать файл " .. path, 3)
         return false
     end
-    local fn, err = loadstring(content)
-    if not fn then
-        notify("Coral", "Ошибка компиляции файла " .. path .. ": " .. tostring(err), 3)
-        return false
-    end
-    if not silent then notify("Mint", "Загружаем " .. path, 1) end
-    if instant then
-        local rok, rerr = pcall(fn)
-        if not rok then
-            notify("Coral", "Ошибка исполнения " .. path .. ": " .. tostring(rerr), 3)
-            return false
-        end
-        return true
-    end
-    return fn
+    if not silent and ready then notify("Mint", "Загружаем " .. path, 1) end
+    return run_source(content, path, instant ~= false)
 end, {"loadFile", "LoadFile", "loadfile", "load"})
 
 register("write_file", function(path, content, rewrite)
@@ -429,11 +436,9 @@ register("load_module", function(module_name, instant, force_update)
     ensure_module_dirs(module_name)
     local local_path = PATHS.modules .. module_name
 
-    local source = nil
-    local from_cache = false
-
+    local source, from_cache = nil, false
     if not force_update then
-        source = read_cached(local_path)
+        source     = read_cached(local_path)
         from_cache = source ~= nil
     end
 
@@ -448,21 +453,28 @@ register("load_module", function(module_name, instant, force_update)
         end
     end
 
+    if instant then
+        local fn, err = loadstring(source)
+        if not fn then
+            notify("Coral", "Ошибка компиляции модуля " .. module_name .. ": " .. tostring(err), 3)
+            return false
+        end
+        local ok, result = pcall(fn)
+        if ok then return result end
+        notify("Coral", "Ошибка исполнения " .. module_name .. ": " .. tostring(result), 3)
+        return fn
+    end
+
+    if ready then
+        notify("Mint", "Загружен модуль " .. module_name ..
+            (from_cache and " (cache)" or " (GitHub)"), 1)
+    end
+
     local fn, err = loadstring(source)
     if not fn then
         notify("Coral", "Ошибка компиляции модуля " .. module_name .. ": " .. tostring(err), 3)
         return false
     end
-
-    if instant then
-        local ok, result = pcall(fn)
-        if ok then return result end
-        notify("Coral", "Ошибка исполнения " .. module_name .. ": " .. tostring(result), 3)
-        return fn   -- отдаём функцию-фабрику на случай, если модуль так задуман
-    end
-
-    notify("Mint", "Загружен модуль " .. module_name ..
-        (from_cache and " (cache)" or " (GitHub)"), 1)
     return fn
 end, {"loadModule", "LoadModule", "loadmodule", "module"})
 
@@ -519,32 +531,18 @@ register("get_teleport", function()
         :format(tostring(game.PlaceId), game.JobId))
 end, {"getTeleport", "GetTeleport", "getteleport"})
 
--- как try_game, но с именем скрипта вместо PlaceId
-local function run_source(source, name, instant)
-    local fn, err = loadstring(source)
-    if not fn then
-        notify("Coral", "Ошибка компиляции " .. name .. ": " .. tostring(err), 3)
-        return false
-    end
-    if instant == false then
-        notify("Mint", "Загружен скрипт " .. name, 1)
-        return fn
-    end
-    local ok, rerr = pcall(fn)
-    if not ok then
-        notify("Coral", "Ошибка исполнения " .. name .. ": " .. tostring(rerr), 3)
-        return false
-    end
-    notify("Mint", "Запущен скрипт " .. name, 1)
-    return true
-end
-
+-- Как try_game, но принимает имя скрипта. instant == false → вернуть функцию.
 register("try_game", function(instant)
     local source = http_get(URLS.try_game .. game.PlaceId .. ".lua")
-    if not source then return false end
+    if not source then
+        notify("Coral", "Скрипт для этой игры не найден", 3)
+        return false
+    end
     return run_source(source, "game(" .. tostring(game.PlaceId) .. ")", instant ~= false)
 end)
 
+-- load_script("farm") → скачает .../main/farm.lua и запустит.
+-- load_script("farm", false) → вернёт скомпилированную функцию.
 register("load_script", function(name, instant)
     if not name or name == "" then
         notify("Coral", "load_script: не указано имя", 3)
@@ -559,7 +557,7 @@ register("load_script", function(name, instant)
         notify("Coral", "Скрипт не найден: " .. name, 3)
         return false
     end
-    -- по умолчанию ведём себя как try_game — сразу исполняем
+    -- по умолчанию — как try_game: сразу исполняем
     return run_source(source, name, instant == nil and true or instant)
 end, {"loadScript", "LoadScript", "loadscript", "run_script", "runScript", "runscript", "script"})
 
@@ -579,7 +577,7 @@ local function run_remote(url, label)
         notify("Coral", (label or url) .. ": не удалось скачать", 3)
         return false
     end
-    return run_source(source, label or url)
+    return run_source(source, label or url, true)
 end
 
 register("simple_spy", function()
@@ -612,12 +610,12 @@ end)
 -- ═══════════════════════════════════════════════════════════════════════
 -- 20. INITIALIZATION
 -- ═══════════════════════════════════════════════════════════════════════
-local ok, mod = pcall(Library.load_module, "notify.lua", true)
-if ok and type(mod) == "table" then
-    msg = mod
+do
+    local ok, mod = pcall(Library.load_module, "notify.lua", true)
+    if ok and type(mod) == "table" then
+        msg = mod
+    end
+    ready = true
 end
-
--- публичный доступ к register для расширения библиотеки
-Library.register = register
 
 return Library
