@@ -43,7 +43,7 @@ local URLS = {
         "https://raw.githubusercontent.com/noclipov/Roblox-Luas/refs/heads/main/Libs/",
         "https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/",
     },
-    try_game     = "https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/",
+    try_game     = "https://raw.githubusercontent.com/noclipov/Roblox-Scripts/main/",
     simple_spy   = "https://raw.githubusercontent.com/78n/SimpleSpy/main/SimpleSpySource.lua",
     dex          = "https://raw.githubusercontent.com/Diffone7/r/refs/heads/main/tsb/dex",
     anti_afk     = "https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/anti_afk.lua",
