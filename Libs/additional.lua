@@ -537,6 +537,8 @@ register("try_game", function(instant)
     if not source then
         notify("Coral", "Скрипт для этой игры не найден", 3)
         return false
+	else
+		notify("Mint", "Скрипт найден", 3)
     end
     return run_source(source, "game(" .. tostring(game.PlaceId) .. ")", instant ~= false)
 end)
