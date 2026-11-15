@@ -1,6 +1,5 @@
 -- ============================================================
--- MovementRecorder.lua
--- Standalone module for recording, saving, and playing back movement paths.
+-- MovementRecorder.lua (Updated)
 -- ============================================================
 local HttpService = game:GetService("HttpService")
 local RunService  = game:GetService("RunService")
@@ -14,7 +13,6 @@ MovementRecorder.__index = MovementRecorder
 local RECORD_HZ = 1 / 30
 local PLAY_RADIUS = 10
 
--- Utils
 local function GetMapName()
     local ok, name = pcall(function() 
         local map = Workspace:FindFirstChild("Map")
@@ -64,33 +62,22 @@ local function TrimTrailingStatic(frames, threshold)
     return trimmed
 end
 
--- ================= CONSTRUCTOR =================
 function MovementRecorder.new(UI)
     local self = setmetatable({}, MovementRecorder)
     self.UI = UI
     self.BaseFolder = "Noclipov/evade/movement"
     
-    -- States
-    self.RecState = {
-        IsRecording = false, StartTime = 0, Frames = {}, FrameAccum = 0, Cache = nil
-    }
+    self.RecState = { IsRecording = false, StartTime = 0, Frames = {}, FrameAccum = 0, Cache = nil }
     self.PlayState = {
         Active = false, Frames = nil, Duration = 0, StartTime = nil, RecName = nil, Speed = 1.0,
         OriginalAutoRotate = nil, OriginalHrpCollide = nil, OriginalWalkSpeed = nil,
         OriginalJumpPower = nil, OriginalJumpHeight = nil, OriginalLVEnabled = nil, TrackedLV = nil
     }
     
-    -- Internal Visuals
     self.MarkerParts = {}
     self.UnsavedMarker = nil
     self.StartMarker = nil
     self.PlaybackPath = { parts = {}, active = false }
-    
-    -- Callbacks
-    self.OnStateChange = nil
-    self.OnStatusUpdate = nil
-    self.OnPlaybackStart = nil
-    self.OnPlaybackStop = nil
     
     self._connections = {}
     self:_SetupEvents()
@@ -113,6 +100,15 @@ function MovementRecorder:Destroy()
     self:StopPlayback(true)
     self:StopRecording(false)
 end
+
+-- ================= EXPOSED HELPERS =================
+function MovementRecorder:GetMapName()
+    return GetMapName()
+end
+
+function MovementRecorder:IsRecording() return self.RecState.IsRecording end
+function MovementRecorder:HasCache() return self.RecState.Cache ~= nil end
+function MovementRecorder:IsPlaying() return self.PlayState.Active end
 
 -- ================= FILES =================
 function MovementRecorder:EnsureFolder()
@@ -188,7 +184,7 @@ function MovementRecorder:CanStartRecording()
 end
 
 function MovementRecorder:StartRecording()
-    if self.RecState.IsRecording or self.PlayState.Active then return end
+    if self.RecState.IsRecording or self.PlayState.Active then return false, "Busy" end
     local ok, reason = self:CanStartRecording()
     if not ok then return false, reason end
     
@@ -199,7 +195,6 @@ function MovementRecorder:StartRecording()
     self.RecState.Cache = nil
     
     self:RefreshMarkers()
-    if self.OnStateChange then self.OnStateChange("record_start", nil) end
     return true
 end
 
@@ -217,20 +212,19 @@ function MovementRecorder:StopRecording(saveToCache)
         
         if #trimmed < 2 then
             self.RecState.Cache = nil
-            if self.OnStateChange then self.OnStateChange("record_failed", "Too short") end
-            return
+            return false, "Too short"
         end
         
         local newDuration = trimmed[#trimmed].t
         self.RecState.Cache = { frames = trimmed, duration = newDuration, frameCount = #trimmed }
         self:CreateUnsavedMarker(trimmed)
-        
-        if self.OnStateChange then self.OnStateChange("record_saved", newDuration) end
+        self:RefreshMarkers()
+        return true, newDuration
     else
         self.RecState.Cache = nil
-        if self.OnStateChange then self.OnStateChange("record_cancel", nil) end
+        self:RefreshMarkers()
+        return false
     end
-    self:RefreshMarkers()
 end
 
 function MovementRecorder:UpdateRecording(dt)
@@ -248,7 +242,6 @@ function MovementRecorder:UpdateRecording(dt)
                 t=t, px=cf.X, py=cf.Y, pz=cf.Z, vx=v.X, vy=v.Y, vz=v.Z,
                 lx=cf.LookVector.X, ly=cf.LookVector.Y, lz=cf.LookVector.Z
             })
-            if self.OnStatusUpdate then self.OnStatusUpdate(t, #self.RecState.Frames) end
         end
     end
 end
@@ -256,12 +249,12 @@ end
 -- ================= PLAYBACK =================
 function MovementRecorder:StartPlayback(recName, frames, duration)
     if self.PlayState.Active then self:StopPlayback() end
-    if not frames or #frames < 2 or self.RecState.IsRecording then return end
+    if not frames or #frames < 2 or self.RecState.IsRecording then return false end
     
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not hrp or not hum or hum.Health <= 0 then return end
+    if not hrp or not hum or hum.Health <= 0 then return false end
     
     self.PlayState.RecName = recName
     self.PlayState.OriginalAutoRotate = hum.AutoRotate
@@ -275,7 +268,6 @@ function MovementRecorder:StartPlayback(recName, frames, duration)
     pcall(function() hum.JumpPower = 0; hum.JumpHeight = 0 end)
     hrp.CanCollide = false
     
-    -- Disable Game LinearVelocity
     local lv
     for _, d in ipairs(char:GetDescendants()) do
         if d:IsA("LinearVelocity") and d.Attachment0 and d.RelativeTo == Enum.ActuatorRelativeTo.World then
@@ -305,13 +297,11 @@ function MovementRecorder:StartPlayback(recName, frames, duration)
     self:CreateStartMarker(p1)
     self:CreatePlaybackPath(frames, 50)
     self:RefreshMarkers()
-    
-    if self.OnPlaybackStart then self.OnPlaybackStart(recName) end
+    return true
 end
 
 function MovementRecorder:StopPlayback(silent)
     if not self.PlayState.Active then return end
-    local wasName = self.PlayState.RecName
     self.PlayState.Active = false
     
     local char = LocalPlayer.Character
@@ -339,8 +329,6 @@ function MovementRecorder:StopPlayback(silent)
     self:ClearPlaybackPath()
     self:DestroyStartMarker()
     self:RefreshMarkers()
-    
-    if self.OnPlaybackStop then self.OnPlaybackStop(wasName, silent) end
 end
 
 function MovementRecorder:UpdatePlayback(dt)
@@ -357,7 +345,6 @@ function MovementRecorder:UpdatePlayback(dt)
     local elapsed = (os.clock() - self.PlayState.StartTime) * self.PlayState.Speed
     if elapsed >= self.PlayState.Duration then self:StopPlayback(); return end
     
-    -- Binary search
     local lo, hi = 1, #frames
     while hi - lo > 1 do
         local mid = math.floor((lo + hi) / 2)
@@ -436,7 +423,6 @@ function MovementRecorder:UpdatePlaybackPath(elapsed)
     end
 end
 
--- Simplified internal marker creation (placeholder logic, assuming simplified parts for brevity)
 function MovementRecorder:ClearMarkers()
     for name, m in pairs(self.MarkerParts) do self:DestroyMarkerVisual(m) end
     table.clear(self.MarkerParts)
@@ -454,7 +440,6 @@ end
 
 function MovementRecorder:CreateStartMarker(pos)
     if self.StartMarker then self:DestroyMarkerVisual(self.StartMarker) end
-    -- Placeholder visual (assumes a simple neon ball for start marker)
     local p = Instance.new("Part")
     p.Name = "Noclipov_StartMarker"
     p.Shape = Enum.PartType.Ball
@@ -498,17 +483,11 @@ end
 
 -- ================= EVENTS =================
 function MovementRecorder:_SetupEvents()
-    -- Internal Heartbeat for recording/playback updates
     self:AddConn(RunService.Heartbeat:Connect(function(dt)
-        if self.RecState.IsRecording then
-            self:UpdateRecording(dt)
-        end
-        if self.PlayState.Active then
-            self:UpdatePlayback(dt)
-        end
+        if self.RecState.IsRecording then self:UpdateRecording(dt) end
+        if self.PlayState.Active then self:UpdatePlayback(dt) end
     end))
 
-    -- Character events
     self:AddConn(LocalPlayer.CharacterRemoving:Connect(function()
         self:StopPlayback(true)
         self:StopRecording(false)

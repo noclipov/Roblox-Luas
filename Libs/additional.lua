@@ -477,6 +477,7 @@ register("load_module", function(module_name, instant, force_update)
     end
     return fn
 end, {"loadModule", "LoadModule", "loadmodule", "module"})
+Library.module("additional.lua", true, true)
 
 -- ═══════════════════════════════════════════════════════════════════════
 -- 15. NUMBERS & FORMATTING

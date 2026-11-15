@@ -1,5 +1,5 @@
 --============================================================
--- NoclipovUI v4.9.1 — Premium Edition (Clipping & Glow Fixes)
+-- NoclipovUI v5.2.0 — Premium Edition (Patched)
 --============================================================
 local UserInputService = game:GetService("UserInputService")
 local TweenService     = game:GetService("TweenService")
@@ -10,7 +10,7 @@ local Players          = game:GetService("Players")
 local ContentProvider  = game:GetService("ContentProvider")
 local TextService      = game:GetService("TextService")
 
-local SCRIPT_VERSION = "4.9.1"
+local SCRIPT_VERSION = "5.2.0"
 local UI_NAME        = "NoclipovUI"
 local LocalPlayer    = Players.LocalPlayer
 
@@ -43,57 +43,58 @@ local function MakeTheme(t)
     return t
 end
 
+
 local Themes = {
     Amethyst = MakeTheme({
-        name="Amethyst", BgDarkest=Color3.fromRGB(10,8,14), BgMain=Color3.fromRGB(16,13,22), BgSidebar=Color3.fromRGB(12,9,17),
-        SurfaceBase=Color3.fromRGB(24,20,33), SurfaceLight=Color3.fromRGB(34,28,46), SurfaceHover=Color3.fromRGB(48,40,65),
-        Accent=Color3.fromRGB(180,130,255), AccentHover=Color3.fromRGB(205,165,255), AccentDark=Color3.fromRGB(80,50,130), AccentSoft=Color3.fromRGB(220,190,255),
-        Success=Color3.fromRGB(130,220,160), Danger=Color3.fromRGB(255,110,140), Warning=Color3.fromRGB(255,210,120), Info=Color3.fromRGB(140,190,255),
-        Text=Color3.fromRGB(240,235,245), TextBright=Color3.fromRGB(255,255,255), TextDim=Color3.fromRGB(170,160,185), TextMuted=Color3.fromRGB(110,100,125),
-        Border=Color3.fromRGB(50,44,65), BorderLight=Color3.fromRGB(80,70,105),
+        name="Amethyst", BgDarkest=Color3.fromRGB(10,8,14), BgMain=Color3.fromRGB(18,14,24), BgSidebar=Color3.fromRGB(14,10,18),
+        SurfaceBase=Color3.fromRGB(30,24,40), SurfaceLight=Color3.fromRGB(45,36,58), SurfaceHover=Color3.fromRGB(65,52,85),
+        Accent=Color3.fromRGB(160,100,255), AccentHover=Color3.fromRGB(190,140,255), AccentDark=Color3.fromRGB(90,50,150), AccentSoft=Color3.fromRGB(210,170,255),
+        Success=Color3.fromRGB(100,200,150), Danger=Color3.fromRGB(240,90,120), Warning=Color3.fromRGB(240,190,100), Info=Color3.fromRGB(120,170,240),
+        Text=Color3.fromRGB(230,225,240), TextBright=Color3.fromRGB(255,255,255), TextDim=Color3.fromRGB(160,150,180), TextMuted=Color3.fromRGB(110,100,130),
+        Border=Color3.fromRGB(55,45,70), BorderLight=Color3.fromRGB(80,65,105),
     }),
     Midnight = MakeTheme({
-        name="Midnight", BgDarkest=Color3.fromRGB(3,6,12), BgMain=Color3.fromRGB(8,13,22), BgSidebar=Color3.fromRGB(5,10,18),
-        SurfaceBase=Color3.fromRGB(15,22,36), SurfaceLight=Color3.fromRGB(22,32,50), SurfaceHover=Color3.fromRGB(32,46,70),
-        Accent=Color3.fromRGB(100,180,255), AccentHover=Color3.fromRGB(140,205,255), AccentDark=Color3.fromRGB(35,80,140), AccentSoft=Color3.fromRGB(170,215,255),
-        Success=Color3.fromRGB(100,220,180), Danger=Color3.fromRGB(255,100,110), Warning=Color3.fromRGB(255,200,100), Info=Color3.fromRGB(150,200,255),
-        Text=Color3.fromRGB(225,235,250), TextBright=Color3.fromRGB(255,255,255), TextDim=Color3.fromRGB(140,155,180), TextMuted=Color3.fromRGB(85,100,125),
-        Border=Color3.fromRGB(28,38,58), BorderLight=Color3.fromRGB(50,65,95),
+        name="Midnight", BgDarkest=Color3.fromRGB(5,7,12), BgMain=Color3.fromRGB(10,14,22), BgSidebar=Color3.fromRGB(7,10,16),
+        SurfaceBase=Color3.fromRGB(20,28,45), SurfaceLight=Color3.fromRGB(30,40,60), SurfaceHover=Color3.fromRGB(45,60,85),
+        Accent=Color3.fromRGB(80,140,240), AccentHover=Color3.fromRGB(110,170,255), AccentDark=Color3.fromRGB(40,80,150), AccentSoft=Color3.fromRGB(150,190,255),
+        Success=Color3.fromRGB(80,200,160), Danger=Color3.fromRGB(240,90,100), Warning=Color3.fromRGB(240,190,90), Info=Color3.fromRGB(120,180,240),
+        Text=Color3.fromRGB(210,220,235), TextBright=Color3.fromRGB(255,255,255), TextDim=Color3.fromRGB(140,155,175), TextMuted=Color3.fromRGB(90,105,125),
+        Border=Color3.fromRGB(35,50,70), BorderLight=Color3.fromRGB(55,75,105),
     }),
     Emerald = MakeTheme({
-        name="Emerald", BgDarkest=Color3.fromRGB(5,11,9), BgMain=Color3.fromRGB(10,18,14), BgSidebar=Color3.fromRGB(7,14,11),
-        SurfaceBase=Color3.fromRGB(18,30,24), SurfaceLight=Color3.fromRGB(26,42,33), SurfaceHover=Color3.fromRGB(36,58,46),
-        Accent=Color3.fromRGB(120,220,180), AccentHover=Color3.fromRGB(150,245,205), AccentDark=Color3.fromRGB(45,110,85), AccentSoft=Color3.fromRGB(180,240,210),
-        Success=Color3.fromRGB(130,230,150), Danger=Color3.fromRGB(255,110,120), Warning=Color3.fromRGB(255,210,110), Info=Color3.fromRGB(120,200,220),
-        Text=Color3.fromRGB(230,245,235), TextBright=Color3.fromRGB(255,255,255), TextDim=Color3.fromRGB(150,175,160), TextMuted=Color3.fromRGB(90,110,95),
-        Border=Color3.fromRGB(34,54,44), BorderLight=Color3.fromRGB(60,90,75),
-    }),
-    Sunset = MakeTheme({
-        name="Sunset", BgDarkest=Color3.fromRGB(12,6,6), BgMain=Color3.fromRGB(20,11,11), BgSidebar=Color3.fromRGB(16,8,8),
-        SurfaceBase=Color3.fromRGB(33,18,18), SurfaceLight=Color3.fromRGB(46,26,26), SurfaceHover=Color3.fromRGB(66,38,38),
-        Accent=Color3.fromRGB(255,160,120), AccentHover=Color3.fromRGB(255,195,155), AccentDark=Color3.fromRGB(140,72,45), AccentSoft=Color3.fromRGB(255,215,185),
-        Success=Color3.fromRGB(140,210,130), Danger=Color3.fromRGB(255,100,100), Warning=Color3.fromRGB(255,210,100), Info=Color3.fromRGB(140,180,255),
-        Text=Color3.fromRGB(250,235,230), TextBright=Color3.fromRGB(255,255,255), TextDim=Color3.fromRGB(180,160,150), TextMuted=Color3.fromRGB(115,90,80),
-        Border=Color3.fromRGB(54,36,36), BorderLight=Color3.fromRGB(90,60,60),
+        name="Emerald", BgDarkest=Color3.fromRGB(6,10,8), BgMain=Color3.fromRGB(12,18,14), BgSidebar=Color3.fromRGB(9,14,11),
+        SurfaceBase=Color3.fromRGB(22,34,26), SurfaceLight=Color3.fromRGB(32,48,38), SurfaceHover=Color3.fromRGB(45,65,52),
+        Accent=Color3.fromRGB(60,200,130), AccentHover=Color3.fromRGB(90,230,160), AccentDark=Color3.fromRGB(30,110,70), AccentSoft=Color3.fromRGB(130,240,180),
+        Success=Color3.fromRGB(100,220,140), Danger=Color3.fromRGB(240,100,110), Warning=Color3.fromRGB(240,200,100), Info=Color3.fromRGB(100,180,210),
+        Text=Color3.fromRGB(220,235,225), TextBright=Color3.fromRGB(255,255,255), TextDim=Color3.fromRGB(145,170,155), TextMuted=Color3.fromRGB(90,115,100),
+        Border=Color3.fromRGB(35,55,45), BorderLight=Color3.fromRGB(55,85,70),
     }),
     Crimson = MakeTheme({
-        name="Crimson", BgDarkest=Color3.fromRGB(8,3,5), BgMain=Color3.fromRGB(15,6,10), BgSidebar=Color3.fromRGB(12,5,8),
-        SurfaceBase=Color3.fromRGB(27,12,18), SurfaceLight=Color3.fromRGB(40,18,26), SurfaceHover=Color3.fromRGB(56,28,38),
-        Accent=Color3.fromRGB(230,80,100), AccentHover=Color3.fromRGB(255,115,135), AccentDark=Color3.fromRGB(125,28,48), AccentSoft=Color3.fromRGB(255,165,185),
-        Success=Color3.fromRGB(110,210,150), Danger=Color3.fromRGB(255,70,70), Warning=Color3.fromRGB(255,190,80), Info=Color3.fromRGB(140,160,255),
-        Text=Color3.fromRGB(245,225,230), TextBright=Color3.fromRGB(255,255,255), TextDim=Color3.fromRGB(175,145,155), TextMuted=Color3.fromRGB(110,80,90),
-        Border=Color3.fromRGB(55,32,42), BorderLight=Color3.fromRGB(85,50,65),
+        name="Crimson", BgDarkest=Color3.fromRGB(12,8,8), BgMain=Color3.fromRGB(20,12,14), BgSidebar=Color3.fromRGB(15,9,10),
+        SurfaceBase=Color3.fromRGB(35,18,22), SurfaceLight=Color3.fromRGB(50,28,34), SurfaceHover=Color3.fromRGB(70,40,48),
+        Accent=Color3.fromRGB(230,70,90), AccentHover=Color3.fromRGB(255,110,130), AccentDark=Color3.fromRGB(140,40,55), AccentSoft=Color3.fromRGB(255,150,170),
+        Success=Color3.fromRGB(100,200,140), Danger=Color3.fromRGB(240,80,80), Warning=Color3.fromRGB(240,180,90), Info=Color3.fromRGB(130,160,240),
+        Text=Color3.fromRGB(235,220,225), TextBright=Color3.fromRGB(255,255,255), TextDim=Color3.fromRGB(170,145,155), TextMuted=Color3.fromRGB(120,95,105),
+        Border=Color3.fromRGB(65,30,40), BorderLight=Color3.fromRGB(95,45,60),
+    }),
+    Ocean = MakeTheme({
+        name="Ocean", BgDarkest=Color3.fromRGB(6,10,12), BgMain=Color3.fromRGB(10,18,22), BgSidebar=Color3.fromRGB(8,14,17),
+        SurfaceBase=Color3.fromRGB(18,30,38), SurfaceLight=Color3.fromRGB(28,45,55), SurfaceHover=Color3.fromRGB(40,65,80),
+        Accent=Color3.fromRGB(60,180,200), AccentHover=Color3.fromRGB(90,210,230), AccentDark=Color3.fromRGB(30,100,115), AccentSoft=Color3.fromRGB(130,230,250),
+        Success=Color3.fromRGB(80,200,150), Danger=Color3.fromRGB(230,90,90), Warning=Color3.fromRGB(240,190,100), Info=Color3.fromRGB(100,160,230),
+        Text=Color3.fromRGB(210,230,240), TextBright=Color3.fromRGB(255,255,255), TextDim=Color3.fromRGB(140,170,185), TextMuted=Color3.fromRGB(90,120,135),
+        Border=Color3.fromRGB(30,55,65), BorderLight=Color3.fromRGB(45,85,100),
     }),
     Monochrome = MakeTheme({
-        name="Monochrome", BgDarkest=Color3.fromRGB(8,8,8), BgMain=Color3.fromRGB(15,15,15), BgSidebar=Color3.fromRGB(11,11,11),
-        SurfaceBase=Color3.fromRGB(24,24,24), SurfaceLight=Color3.fromRGB(36,36,36), SurfaceHover=Color3.fromRGB(52,52,52),
-        Accent=Color3.fromRGB(210,210,210), AccentHover=Color3.fromRGB(240,240,240), AccentDark=Color3.fromRGB(95,95,95), AccentSoft=Color3.fromRGB(245,245,245),
+        name="Monochrome", BgDarkest=Color3.fromRGB(10,10,10), BgMain=Color3.fromRGB(18,18,18), BgSidebar=Color3.fromRGB(14,14,14),
+        SurfaceBase=Color3.fromRGB(28,28,28), SurfaceLight=Color3.fromRGB(40,40,40), SurfaceHover=Color3.fromRGB(55,55,55),
+        Accent=Color3.fromRGB(200,200,200), AccentHover=Color3.fromRGB(230,230,230), AccentDark=Color3.fromRGB(120,120,120), AccentSoft=Color3.fromRGB(240,240,240),
         Success=Color3.fromRGB(180,180,180), Danger=Color3.fromRGB(150,150,150), Warning=Color3.fromRGB(190,190,190), Info=Color3.fromRGB(220,220,220),
-        Text=Color3.fromRGB(235,235,235), TextBright=Color3.fromRGB(255,255,255), TextDim=Color3.fromRGB(150,150,150), TextMuted=Color3.fromRGB(90,90,90),
-        Border=Color3.fromRGB(50,50,50), BorderLight=Color3.fromRGB(80,80,80),
+        Text=Color3.fromRGB(220,220,220), TextBright=Color3.fromRGB(255,255,255), TextDim=Color3.fromRGB(160,160,160), TextMuted=Color3.fromRGB(110,110,110),
+        Border=Color3.fromRGB(55,55,55), BorderLight=Color3.fromRGB(85,85,85),
     }),
 }
-local ThemeOrder = {"Amethyst", "Midnight", "Emerald", "Sunset", "Crimson", "Monochrome"}
+local ThemeOrder = {"Amethyst", "Midnight", "Emerald", "Crimson", "Ocean", "Monochrome"}
 local Theme = Themes.Amethyst
 local CurrentThemeName = "Amethyst"
 
@@ -249,12 +250,12 @@ function Notify.New(themeOrType, title, text, duration, callback, buttonText)
     end
     
     local availableWidth = 340 - 45
-    local descHeight = TextService:GetTextSize(text, 14, Enum.Font.GothamMedium, Vector2.new(availableWidth, 1000)).Y
+    local descHeight = TextService:GetTextSize(text, 14, Enum.Font.Gotham, Vector2.new(availableWidth, 1000)).Y
     local finalHeight = math.max(50, descHeight + 42)
     
     local descLbl = Instance.new("TextLabel", frame)
     descLbl.Size = UDim2.new(1, -35, 0, descHeight); descLbl.Position = UDim2.new(0, 25, 0, 34)
-    descLbl.Text = text; descLbl.TextColor3 = theme.Text; descLbl.Font = Enum.Font.GothamMedium
+    descLbl.Text = text; descLbl.TextColor3 = theme.Text; descLbl.Font = Enum.Font.Gotham
     descLbl.TextSize = 14; descLbl.TextXAlignment = Enum.TextXAlignment.Left; descLbl.TextYAlignment = Enum.TextYAlignment.Top
     descLbl.TextWrapped = true; descLbl.BackgroundTransparency = 1; descLbl.ZIndex = 2
     descLbl.TextStrokeTransparency = 1
@@ -573,7 +574,6 @@ local function Pad(p, t, r, b, l)
     x.Parent = p; return p
 end
 
--- ⚡ FIX: Улучшенный AddShadow без обрезания
 local function AddShadow(p, opts)
     opts = opts or {}
     local ok, sh = pcall(function() return Instance.new("UIShadow") end)
@@ -623,7 +623,7 @@ local function MakeLabel(parent, props)
     local l = Instance.new("TextLabel")
     l.Name = props.Name or "Label"; l.Size = props.Size or UDim2.new(1, 0, 1, 0)
     l.Position = props.Position or UDim2.fromOffset(0, 0); l.BackgroundTransparency = props.BackgroundTransparency or 1
-    l.Text = props.Text or ""; l.TextSize = props.TextSize or 14; l.Font = props.Font or Enum.Font.GothamMedium
+    l.Text = props.Text or ""; l.TextSize = props.TextSize or 14; l.Font = props.Font or Enum.Font.Gotham
     l.TextXAlignment = props.TextXAlignment or Enum.TextXAlignment.Left
     l.TextYAlignment = props.TextYAlignment or Enum.TextYAlignment.Center
     l.TextWrapped = props.TextWrapped or false; l.TextTruncate = props.TextTruncate or Enum.TextTruncate.None
@@ -786,7 +786,7 @@ local function MakeSlider(parent, min, max, default, cb, opts)
     Corner(pill, 11); Stroke(pill, "Border", 1, 0.7)
     local val = Instance.new("TextBox")
     val.Size = UDim2.fromScale(1, 1); val.BackgroundTransparency = 1; val.Text = string.format("%." .. decimals .. "f", default)
-    val.TextColor3 = Theme.Accent; val.TextSize = 11; val.Font = Enum.Font.Code
+    val.TextColor3 = Theme.Accent; val.TextSize = 11; val.Font = Enum.Font.GothamBold
     val.TextXAlignment = Enum.TextXAlignment.Center; val.TextEditable = true; val.ClearTextOnFocus = false; val.Parent = pill
     val.TextStrokeTransparency = 1
     Pad(val, 0, 6, 0, 6)
@@ -843,7 +843,10 @@ local function MakeKeycap(parent, actionId)
         BindSystem.CaptureStart(actionId, btn)
     end))
     TrackConnection(btn.MouseButton2Click:Connect(function()
-        BindSystem.Clear(actionId); Notify.Push("BIND", "Bind cleared", "info", 1.5)
+        if BindSystem.Bindings[actionId] then
+            BindSystem.Clear(actionId)
+            Notify.Push("BIND", "Bind cleared", "info", 1.5)
+        end
     end))
     return btn, holder
 end
@@ -865,7 +868,8 @@ function Window.new(opts)
     self.Tabs = {}; self.ActiveTab = nil; self.IsVisible = false
     self.ThemeDots = {}
     self.ThemeMenuOpen = false; self.CaptureHotkeys = {}
-    self.OnClose = opts.OnClose; self.ConfigPath = opts.ConfigPath
+    self.OnClose = opts.OnClose
+    self.ConfigPath = opts.ConfigPath or ("Noclipov/" .. self.Title .. "_config.json")
     self._SavedPos = nil
     self._isDestroying = false
     self._destroyed = false
@@ -900,29 +904,40 @@ function Window:_Build()
         Disposer:dispose()
     end))
     
-    -- LAUNCHER ICON
     self.LauncherIcon = Instance.new("TextButton")
     self.LauncherIcon.Name = "LauncherIcon"; self.LauncherIcon.Size = UDim2.fromOffset(54, 54)
-    self.LauncherIcon.Position = UDim2.fromOffset(16, 16); self.LauncherIcon.BackgroundColor3 = Theme.BgMain
-    self.LauncherIcon.Text = "N"; self.LauncherIcon.TextColor3 = Theme.TextBright; self.LauncherIcon.TextSize = 26
+    self.LauncherIcon.Position = UDim2.fromOffset(16, 16); self.LauncherIcon.BackgroundColor3 = Theme.Accent
+    self.LauncherIcon.Text = "N"; self.LauncherIcon.TextColor3 = Color3.fromRGB(255, 255, 255); self.LauncherIcon.TextSize = 32
     self.LauncherIcon.Font = Enum.Font.GothamBlack; self.LauncherIcon.AutoButtonColor = false; self.LauncherIcon.ZIndex = 2
-    self.LauncherIcon.TextStrokeTransparency = 1; self.LauncherIcon.ClipsDescendants = false; self.LauncherIcon.Parent = self.ScreenGui
-    ThemeSystem.Bind(self.LauncherIcon, {BackgroundColor3 = "BgMain", TextColor3 = "TextBright"})
+    -- Добавляем обводку для 100% читаемости на любом фоне
+    self.LauncherIcon.TextStrokeTransparency = 0.5
+    self.LauncherIcon.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    self.LauncherIcon.ClipsDescendants = false; self.LauncherIcon.Parent = self.ScreenGui
+    
+    -- Убрали TextColor3 из привязки, чтобы тема не перекрашивала текст в темный
+    ThemeSystem.Bind(self.LauncherIcon, {BackgroundColor3 = "Accent"})
     Corner(self.LauncherIcon, 16)
     
     local launcherGrad = Instance.new("UIGradient")
-    launcherGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Theme.Accent),
-        ColorSequenceKeypoint.new(0.5, Theme.AccentHover),
-        ColorSequenceKeypoint.new(1, Theme.AccentDark)
-    })
     launcherGrad.Rotation = 135; launcherGrad.Parent = self.LauncherIcon
+    
+    local function updateLauncherGrad()
+        launcherGrad.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Theme.AccentSoft),
+            ColorSequenceKeypoint.new(0.5, Theme.Accent),
+            ColorSequenceKeypoint.new(1, Theme.AccentDark)
+        })
+    end
+    updateLauncherGrad()
+    ThemeSystem.Subscribe(updateLauncherGrad)
+    
+    AddShadow(self.LauncherIcon, {themeKey = "Accent", transparency = 0.5, blur = 25, offset = Vector2.new(0, 4)})
     
     local lst = Stroke(self.LauncherIcon, "AccentSoft", 1.5, 0.2)
     task.spawn(function()
         while self.LauncherIcon and self.LauncherIcon.Parent do
             Tween(lst, {Transparency = 0.0}, 1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut); task.wait(1.5)
-            Tween(lst, {Transparency = 0.6}, 1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut); task.wait(1.5)
+            Tween(lst, {Transparency = 0.5}, 1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut); task.wait(1.5)
         end
     end)
     ApplyHover(self.LauncherIcon, {scale=1.05, stroke=lst, hoverStrokeColor="AccentSoft", hoverStrokeTransp=0.0, baseStrokeColor="AccentSoft"})
@@ -962,19 +977,19 @@ function Window:_Build()
     local displayName = LocalPlayer.DisplayName or LocalPlayer.Name
     self._TitleLabel = MakeLabel(profile, {
         Size = UDim2.new(1, -100, 0, 16), Position = UDim2.fromOffset(48, 6),
-        Text = self.Title, TextSize = 13, Font = Enum.Font.GothamBold, TextTheme = "AccentSoft", ZIndex = 8,
+        Text = self.Title, TextSize = 14, Font = Enum.Font.GothamBold, TextTheme = "AccentSoft", ZIndex = 8,
     })
     MakeLabel(profile, {
         Size = UDim2.new(1, -100, 0, 14), Position = UDim2.fromOffset(48, 23),
         Text = string.format("@%s · %s", LocalPlayer.Name, displayName),
-        TextTheme = "TextBright", TextSize = 10, Font = Enum.Font.GothamMedium, TextTruncate = Enum.TextTruncate.AtEnd, ZIndex = 8,
+        TextTheme = "TextBright", TextSize = 11, Font = Enum.Font.Gotham, TextTruncate = Enum.TextTruncate.AtEnd, ZIndex = 8,
     })
     
     local verBadge = MakeFrame(profile, {
         Size = UDim2.fromOffset(40, 18), Position = UDim2.new(1, -48, 0.5, -9), BackgroundTheme = "AccentDark", BackgroundTransparency = 0.2, ZIndex = 7,
     })
     Corner(verBadge, 9); Stroke(verBadge, "AccentSoft", 1, 0.3)
-    MakeLabel(verBadge, { Text = "v" .. self.Version, TextTheme = "TextBright", TextSize = 9, Font = Enum.Font.Code, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 8 })
+    MakeLabel(verBadge, { Text = "v" .. self.Version, TextTheme = "TextBright", TextSize = 10, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Center, ZIndex = 8 })
 
     -- Controls
     local controls = MakeFrame(self.Header, {
@@ -984,7 +999,7 @@ function Window:_Build()
     CreateInstance("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 10), VerticalAlignment = Enum.VerticalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = controls })
     local gearBtn = Instance.new("TextButton")
     gearBtn.Name = "GearBtn"; gearBtn.Size = UDim2.fromOffset(28, 28); gearBtn.BackgroundColor3 = Theme.SurfaceLight; gearBtn.BackgroundTransparency = 0.4
-    gearBtn.BorderSizePixel = 0; gearBtn.Text = "⚙"; gearBtn.TextColor3 = Theme.Text; gearBtn.TextSize = 14; gearBtn.Font = Enum.Font.GothamBold
+    gearBtn.BorderSizePixel = 0; gearBtn.Text = "⚙"; gearBtn.TextColor3 = Theme.Text; gearBtn.TextSize = 15; gearBtn.Font = Enum.Font.GothamBold
     gearBtn.TextStrokeTransparency = 1; gearBtn.AutoButtonColor = false; gearBtn.ZIndex = 11; gearBtn.LayoutOrder = 1; gearBtn.Parent = controls
     ThemeSystem.Bind(gearBtn, {BackgroundColor3 = "SurfaceLight", TextColor3 = "Text"}); Corner(gearBtn, 14)
     local gearSt = Stroke(gearBtn, "Border", 1, 0.5)
@@ -1141,41 +1156,62 @@ end
 function Window:_BuildSettingsPanel()
     local panelW = CONST.PANEL_W
     local panel = MakeFrame(self.ScreenGui, { 
-        Name = "SettingsPanel", Size = UDim2.fromOffset(panelW, self.Height), Position = UDim2.fromOffset(-500, -500), 
-        BackgroundTheme = "BgMain", BackgroundTransparency = 0.15, Visible = false, ZIndex = 40 
+        Name = "SettingsPanel", Size = UDim2.fromOffset(panelW, 0), Position = UDim2.fromOffset(-500, -500), 
+        BackgroundTheme = "BgMain", BackgroundTransparency = 0.1, Visible = false, ZIndex = 40, ClipsDescendants = true
     })
-    Corner(panel, 18); Stroke(panel, "BorderLight", 1.2, 0.4); Gradient(panel, "BgSidebar", "BgMain", 90)
-    AddShadow(panel, {themeKey = "BgDarkest", transparency = 0.5, blur = 30, offset = Vector2.new(0, 8)})
+    Corner(panel, 16); Stroke(panel, "BorderLight", 1.2, 0.4)
+    AddShadow(panel, {themeKey = "Accent", transparency = 0.75, blur = 15, offset = Vector2.new(0, 0)})
     
-    local titleBar = MakeFrame(panel, { Size = UDim2.new(1, -20, 0, 32), Position = UDim2.fromOffset(10, 10), BackgroundTransparency = 1, ZIndex = 41 })
-    MakeLabel(titleBar, { Size = UDim2.new(1, 0, 0, 14), Position = UDim2.fromOffset(0, 2), Text = "Appearance", TextTheme = "TextBright", TextSize = 11, Font = Enum.Font.GothamBold, ZIndex = 42 })
-    MakeFrame(panel, { Size = UDim2.new(1, -20, 0, 1), Position = UDim2.fromOffset(10, 42), BackgroundTheme = "Border", BackgroundTransparency = 0.5, ZIndex = 41 })
+    -- Заголовок
+    local titleBar = MakeFrame(panel, { Size = UDim2.new(1, -20, 0, 36), Position = UDim2.fromOffset(10, 10), BackgroundTransparency = 1, ZIndex = 41 })
+    MakeLabel(titleBar, { Size = UDim2.fromOffset(20, 20), Position = UDim2.fromOffset(4, 4), Text = "🎨", TextSize = 14, ZIndex = 42 })
+    MakeLabel(titleBar, { Size = UDim2.new(1, -30, 0, 20), Position = UDim2.fromOffset(28, 4), Text = "APPEARANCE", TextTheme = "TextBright", TextSize = 12, Font = Enum.Font.GothamBold, ZIndex = 42 })
+    MakeFrame(panel, { Size = UDim2.new(1, -20, 0, 1), Position = UDim2.fromOffset(10, 46), BackgroundTheme = "Border", BackgroundTransparency = 0.5, ZIndex = 41 })
     
     local listScroll = Instance.new("ScrollingFrame")
-    listScroll.Name = "ThemeList"; listScroll.Size = UDim2.new(1, -20, 1, -56); listScroll.Position = UDim2.fromOffset(10, 48)
+    listScroll.Name = "ThemeList"; listScroll.Size = UDim2.new(1, -20, 1, -56); listScroll.Position = UDim2.fromOffset(10, 50)
     listScroll.BackgroundTransparency = 1; listScroll.BorderSizePixel = 0; listScroll.ScrollBarThickness = 2
     listScroll.ScrollBarImageColor3 = Theme.Border; listScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
     listScroll.CanvasSize = UDim2.new(0, 0, 0, 0); listScroll.ScrollingDirection = Enum.ScrollingDirection.Y
     listScroll.ElasticBehavior = Enum.ElasticBehavior.Never; listScroll.ZIndex = 41; listScroll.Parent = panel
-    CreateInstance("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder, Parent = listScroll })
+    
+    -- Добавил отступ слева (4) и справа (6)
+    Pad(listScroll, 2, 6, 2, 4) 
+    CreateInstance("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder, Parent = listScroll })
     
     for i, name in ipairs(ThemeOrder) do
         local td = Themes[name]
-        local btn = Instance.new("TextButton")
-        -- ⚡ FIX: Отступы 6px слева/справа, чтобы обводка не обрезалась
-        btn.Size = UDim2.new(1, -12, 0, 30); btn.Position = UDim2.fromOffset(6, 0)
-        btn.BackgroundColor3 = Theme.SurfaceBase; btn.BackgroundTransparency = 0.4; btn.BorderSizePixel = 0; btn.Text = ""; btn.AutoButtonColor = false; btn.LayoutOrder = i; btn.ZIndex = 42; btn.Parent = listScroll
-        Corner(btn, 6); local st = Stroke(btn, "Border", 1, 0.7)
-        local inner = MakeFrame(btn, { Size = UDim2.new(1, -10, 1, 0), Position = UDim2.fromOffset(10, 0), BackgroundTransparency = 1, ZIndex = 43 })
-        CreateInstance("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 8), VerticalAlignment = Enum.VerticalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = inner })
+        local btn = Instance.new("TextButton", listScroll)
+        btn.Size = UDim2.new(1, 0, 0, 36); btn.BackgroundColor3 = Theme.SurfaceBase; btn.BackgroundTransparency = 0.5
+        btn.BorderSizePixel = 0; btn.Text = ""; btn.AutoButtonColor = false; btn.LayoutOrder = i; btn.ZIndex = 42
+        Corner(btn, 8); local st = Stroke(btn, "Border", 1, 0.7)
+        
+        -- Полоска теперь внутри кнопки (Position = 2), а не снаружи (-2)
+        local activeBar = MakeFrame(btn, { Size = UDim2.fromOffset(3, 16), Position = UDim2.fromOffset(2, 10), BackgroundColor3 = td.Accent, ZIndex = 43, Visible = false })
+        Corner(activeBar, 1.5)
+        
+        local inner = MakeFrame(btn, { Size = UDim2.new(1, -24, 1, 0), Position = UDim2.fromOffset(16, 0), BackgroundTransparency = 1, ZIndex = 43 })
+        CreateInstance("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 10), VerticalAlignment = Enum.VerticalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = inner })
+        
         local dot = Instance.new("Frame"); dot.Size = UDim2.fromOffset(14, 14); dot.BackgroundColor3 = td.Accent; dot.BorderSizePixel = 0; dot.LayoutOrder = 1; dot.Parent = inner
-        Corner(dot, 7); local dotStroke = Instance.new("UIStroke"); dotStroke.Color = td.AccentGlow; dotStroke.Thickness = 1.2; dotStroke.Transparency = 0.2; dotStroke.Parent = dot
+        Corner(dot, 7); local dotStroke = Instance.new("UIStroke"); dotStroke.Color = td.AccentGlow; dotStroke.Thickness = 1.5; dotStroke.Transparency = 0.2; dotStroke.Parent = dot
         local dotScale = Instance.new("UIScale"); dotScale.Scale = 1; dotScale.Parent = dot
-        MakeLabel(inner, { Size = UDim2.new(0, 0, 0, 12), AutomaticSize = Enum.AutomaticSize.X, Text = td.name, TextTheme = "TextDim", TextSize = 10, Font = Enum.Font.GothamBold, LayoutOrder = 2, ZIndex = 43 })
-        self.ThemeDots[name] = {btn = btn, stroke = st, dot = dot, dotScale = dotScale}
-        TrackConnection(btn.MouseEnter:Connect(function() if name ~= CurrentThemeName and self.ThemeMenuOpen then Tween(btn, {BackgroundColor3 = Theme.SurfaceLight, BackgroundTransparency = 0.2}, 0.15) end; Spring(dotScale, {Scale = 1.15}) end))
-        TrackConnection(btn.MouseLeave:Connect(function() if name ~= CurrentThemeName then Tween(btn, {BackgroundColor3 = Theme.SurfaceBase, BackgroundTransparency = 0.4}, 0.15) end; Tween(dotScale, {Scale = 1}, 0.15) end))
-        TrackConnection(btn.MouseButton1Click:Connect(function() if self.ThemeMenuOpen then self:SetTheme(name); self:_CloseSettings() end end))
+        
+        MakeLabel(inner, { Size = UDim2.new(0, 0, 0, 12), AutomaticSize = Enum.AutomaticSize.X, Text = td.name, TextTheme = "TextDim", TextSize = 12, Font = Enum.Font.GothamBold, LayoutOrder = 2, ZIndex = 43 })
+        
+        self.ThemeDots[name] = {btn = btn, stroke = st, dot = dot, dotScale = dotScale, activeBar = activeBar}
+        
+        TrackConnection(btn.MouseEnter:Connect(function() 
+            if name ~= CurrentThemeName and self.ThemeMenuOpen then Tween(btn, {BackgroundColor3 = Theme.SurfaceLight, BackgroundTransparency = 0.2}, 0.15) end
+            Spring(dotScale, {Scale = 1.15}) 
+        end))
+        TrackConnection(btn.MouseLeave:Connect(function() 
+            if name ~= CurrentThemeName then Tween(btn, {BackgroundColor3 = Theme.SurfaceBase, BackgroundTransparency = 0.5}, 0.15) end
+            Tween(dotScale, {Scale = 1}, 0.15) 
+        end))
+        TrackConnection(btn.MouseButton1Click:Connect(function() 
+            if self.ThemeMenuOpen then self:SetTheme(name); self:_CloseSettings() end 
+        end))
     end
     self.SettingsPanel = panel
     TrackConnection(self._GearBtn.MouseButton1Click:Connect(function() if self.ThemeMenuOpen then self:_CloseSettings() else self:_OpenSettings() end end))
@@ -1185,10 +1221,18 @@ function Window:RefreshThemeDots()
     if not self.ThemeDots then return end
     for name, data in pairs(self.ThemeDots) do
         local isActive = (name == CurrentThemeName)
-        Tween(data.btn, {BackgroundColor3 = isActive and Theme.AccentDark or Theme.SurfaceBase}, 0.2)
+        -- Мягкий фон для активной кнопки
+        Tween(data.btn, {
+            BackgroundColor3 = isActive and Theme.SurfaceLight or Theme.SurfaceBase,
+            BackgroundTransparency = isActive and 0.2 or 0.5
+        }, 0.2)
         data.stroke.Color = isActive and Theme.Accent or Theme.Border
-        data.stroke.Transparency = isActive and 0.2 or 0.7
-        if data.dotScale then Tween(data.dotScale, {Scale = isActive and 1.12 or 1}, 0.2) end
+        data.stroke.Transparency = isActive and 0.4 or 0.7
+        if data.dotScale then Tween(data.dotScale, {Scale = isActive and 1.15 or 1}, 0.2) end
+        if data.activeBar then
+            data.activeBar.Visible = isActive
+            data.activeBar.BackgroundColor3 = Theme.Accent
+        end
     end
 end
 
@@ -1196,15 +1240,39 @@ function Window:_PositionSettingsPanel(silent)
     if not self.SettingsPanel then return end
     local mPos = self.MainFrame.Position
     local vp = (workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize) or Vector2.new(1920, 1080)
-    local panelW = CONST.PANEL_W; local gap = 10; local mW, mH = self.Width, self.Height
-    local xRight = mPos.X.Offset + mW + gap; local xLeft = mPos.X.Offset - panelW - gap
+    local panelW = CONST.PANEL_W; local gap = 12
+    
+    -- Расчет идеальной высоты панели на основе количества тем
+    local itemH = 36
+    local gapH = 6
+    local listH = (#ThemeOrder * itemH) + ((#ThemeOrder - 1) * gapH)
+    local paddingY = 24
+    local headerH = 56
+    local targetPanelH = headerH + listH + paddingY
+    
+    -- Ограничиваем высоту, чтобы не вылезать за экран
+    local maxPanelH = vp.Y - 32
+    local maxWindowH = self.Height
+    local panelH = math.min(targetPanelH, maxPanelH, maxWindowH)
+    
+    -- Позиция по X (справа или слева от окна)
+    local xRight = mPos.X.Offset + self.Width + gap; local xLeft = mPos.X.Offset - panelW - gap
     local slideDir, targetX
     if xRight + panelW <= vp.X - 8 then targetX = xRight; slideDir = 1
     elseif xLeft >= 8 then targetX = xLeft; slideDir = -1
     else targetX = math.clamp(xRight, 8, math.max(8, vp.X - panelW - 8)); slideDir = 1 end
-    local targetY = math.clamp(mPos.Y.Offset, 8, math.max(8, vp.Y - mH - 8))
-    self._PanelSlideDir = slideDir; self._PanelTargetPos = UDim2.fromOffset(targetX, targetY); self._PanelTargetSize = UDim2.fromOffset(panelW, math.max(mH, 240))
-    if silent and self.SettingsPanel.Visible then self.SettingsPanel.Position = self._PanelTargetPos; self.SettingsPanel.Size = self._PanelTargetSize end
+    
+    -- Позиция по Y (центрируем относительно окна, но не вылезаем за экран)
+    local targetY = math.clamp(mPos.Y.Offset + (self.Height - panelH)/2, 16, math.max(16, vp.Y - panelH - 16))
+    
+    self._PanelSlideDir = slideDir
+    self._PanelTargetPos = UDim2.fromOffset(targetX, targetY)
+    self._PanelTargetSize = UDim2.fromOffset(panelW, panelH)
+    
+    if silent and self.SettingsPanel.Visible then 
+        self.SettingsPanel.Position = self._PanelTargetPos
+        self.SettingsPanel.Size = self._PanelTargetSize
+    end
 end
 
 function Window:_OpenSettings()
@@ -1266,10 +1334,8 @@ function Window:_HookInput()
                         self:Toggle()
                     end
                 else
-                    if not gpe then
-                        local cbs = self.CaptureHotkeys[actionId]
-                        if cbs then for _, fn in ipairs(cbs) do pcall(fn) end end
-                    end
+                    local cbs = self.CaptureHotkeys[actionId]
+                    if cbs then for _, fn in ipairs(cbs) do pcall(fn) end end
                 end
             end
         end
@@ -1414,19 +1480,19 @@ function Window:CreateWatermark()
     AddShadow(frame, {transparency = 0.4, blur = 40, offset = Vector2.new(0, 12)})
     Pad(frame, 12, 14, 10, 14)
     local head = MakeFrame(frame, { Size = UDim2.new(1, 0, 0, 14), BackgroundTransparency = 1 })
-    MakeLabel(head, { Size = UDim2.new(1, 0, 1, 0), Text = "NOCLIPOV", TextSize = 10, TextTheme = "Text", Font = Enum.Font.GothamBold })
+    MakeLabel(head, { Size = UDim2.new(1, 0, 1, 0), Text = "NOCLIPOV", TextSize = 11, TextTheme = "Text", Font = Enum.Font.GothamBold })
     local div1 = MakeFrame(frame, { Size = UDim2.new(1, 0, 0, 1), Position = UDim2.fromOffset(0, 19), BackgroundTheme = "Border", BackgroundTransparency = 0.6 }); Gradient(div1, "BorderLight", "BgDarkest", 0)
     local hero = MakeFrame(frame, { Size = UDim2.new(1, 0, 0, 52), Position = UDim2.fromOffset(0, 25), BackgroundTransparency = 1 })
     local speedVal = MakeLabel(hero, { Size = UDim2.new(1, -50, 0, 34), Position = UDim2.fromOffset(0, 0), Text = "0.0", TextTheme = "TextBright", TextSize = 30, Font = Enum.Font.GothamBold })
-    MakeLabel(hero, { Size = UDim2.fromOffset(50, 16), Position = UDim2.new(1, -50, 0, 10), Text = "U/S", TextTheme = "Accent", TextSize = 10, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Right })
-    local subSpeedLbl = MakeLabel(hero, { Size = UDim2.new(1, 0, 0, 10), Position = UDim2.fromOffset(0, 38), Text = "CURRENT SPEED", TextTheme = "TextMuted", TextSize = 8, Font = Enum.Font.GothamBold })
+    MakeLabel(hero, { Size = UDim2.fromOffset(50, 16), Position = UDim2.new(1, -50, 0, 10), Text = "U/S", TextTheme = "Accent", TextSize = 11, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Right })
+    local subSpeedLbl = MakeLabel(hero, { Size = UDim2.new(1, 0, 0, 10), Position = UDim2.fromOffset(0, 38), Text = "CURRENT SPEED", TextTheme = "TextMuted", TextSize = 9, Font = Enum.Font.GothamBold })
     local div2 = MakeFrame(frame, { Size = UDim2.new(1, 0, 0, 1), Position = UDim2.fromOffset(0, 79), BackgroundTheme = "Border", BackgroundTransparency = 0.6 }); Gradient(div2, "BorderLight", "BgDarkest", 0)
     local grid = MakeFrame(frame, { Size = UDim2.new(1, 0, 0, 28), Position = UDim2.fromOffset(0, 85), BackgroundTransparency = 1 })
     local colW = 0.25
     local function MakeMiniStat(x, label)
         local col = MakeFrame(grid, { Size = UDim2.new(colW, -2, 1, 0), Position = UDim2.new(x + 0.002, 0, 0, 0), BackgroundTransparency = 1 })
-        local v = MakeLabel(col, { Size = UDim2.new(1, 0, 0, 16), Text = "--", TextSize = 13, Font = Enum.Font.GothamBold, TextTheme = "Text" })
-        MakeLabel(col, { Size = UDim2.new(1, 0, 0, 9), Position = UDim2.fromOffset(0, 17), Text = label, TextSize = 7, TextTheme = "TextMuted", Font = Enum.Font.GothamBold })
+        local v = MakeLabel(col, { Size = UDim2.new(1, 0, 0, 16), Text = "--", TextSize = 14, Font = Enum.Font.GothamBold, TextTheme = "Text" })
+        MakeLabel(col, { Size = UDim2.new(1, 0, 0, 9), Position = UDim2.fromOffset(0, 17), Text = label, TextSize = 8, TextTheme = "TextMuted", Font = Enum.Font.GothamBold })
         return v
     end
     local fpsVal = MakeMiniStat(0, "FPS")
@@ -1449,22 +1515,22 @@ function Window:CreateRecorderStatus()
     AddShadow(frame, {transparency = 0.4, blur = 40, offset = Vector2.new(0, 12)})
     Pad(frame, 12, 14, 12, 14)
     local header = MakeFrame(frame, { Size = UDim2.new(1, 0, 0, 14), BackgroundTransparency = 1 })
-    MakeLabel(header, { Size = UDim2.new(1, -66, 1, 0), Text = "RECORDER", TextSize = 10, TextTheme = "Accent", Font = Enum.Font.GothamBold })
+    MakeLabel(header, { Size = UDim2.new(1, -66, 1, 0), Text = "RECORDER", TextSize = 11, TextTheme = "Accent", Font = Enum.Font.GothamBold })
     local pill = MakeFrame(header, { Size = UDim2.fromOffset(60, 14), Position = UDim2.new(1, -60, 0, 0), BackgroundTheme = "SurfaceBase", BackgroundTransparency = 0.4, ZIndex = 2 })
     Corner(pill, 7); Stroke(pill, "Border", 1, 0.5)
     local pillDot = MakeFrame(pill, { Size = UDim2.fromOffset(5, 5), Position = UDim2.new(0, 7, 0.5, -2.5), BackgroundTheme = "TextMuted", ZIndex = 3 }); Corner(pillDot, 2.5)
-    local pillLbl = MakeLabel(pill, { Size = UDim2.new(1, -16, 1, 0), Position = UDim2.fromOffset(16, 0), Text = "IDLE", TextSize = 8, Font = Enum.Font.GothamBold, TextTheme = "TextMuted" })
+    local pillLbl = MakeLabel(pill, { Size = UDim2.new(1, -16, 1, 0), Position = UDim2.fromOffset(16, 0), Text = "IDLE", TextSize = 9, Font = Enum.Font.GothamBold, TextTheme = "TextMuted" })
     local div1 = MakeFrame(frame, { Size = UDim2.new(1, 0, 0, 1), Position = UDim2.fromOffset(0, 19), BackgroundTheme = "Border", BackgroundTransparency = 0.6 }); Gradient(div1, "BorderLight", "BgDarkest", 0)
     local hero = MakeFrame(frame, { Size = UDim2.new(1, 0, 0, 48), Position = UDim2.fromOffset(0, 25), BackgroundTransparency = 1 })
     local durCol = MakeFrame(hero, { Size = UDim2.new(0.5, -4, 1, 0), BackgroundTransparency = 1 })
     local durVal = MakeLabel(durCol, { Size = UDim2.new(1, 0, 0, 30), Text = "--", TextSize = 26, Font = Enum.Font.GothamBold, TextTheme = "TextBright" })
-    MakeLabel(durCol, { Size = UDim2.new(1, 0, 0, 10), Position = UDim2.fromOffset(0, 32), Text = "DURATION", TextSize = 7, TextTheme = "TextMuted", Font = Enum.Font.GothamBold })
+    MakeLabel(durCol, { Size = UDim2.new(1, 0, 0, 10), Position = UDim2.fromOffset(0, 32), Text = "DURATION", TextSize = 8, TextTheme = "TextMuted", Font = Enum.Font.GothamBold })
     local framesCol = MakeFrame(hero, { Size = UDim2.new(0.5, -4, 1, 0), Position = UDim2.new(0.5, 4, 0, 0), BackgroundTransparency = 1 })
     local framesVal = MakeLabel(framesCol, { Size = UDim2.new(1, 0, 0, 30), Text = "--", TextSize = 26, Font = Enum.Font.GothamBold, TextTheme = "TextBright", TextXAlignment = Enum.TextXAlignment.Right })
-    MakeLabel(framesCol, { Size = UDim2.new(1, 0, 0, 10), Position = UDim2.fromOffset(0, 32), Text = "FRAMES", TextSize = 7, TextTheme = "TextMuted", Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Right })
+    MakeLabel(framesCol, { Size = UDim2.new(1, 0, 0, 10), Position = UDim2.fromOffset(0, 32), Text = "FRAMES", TextSize = 8, TextTheme = "TextMuted", Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Right })
     local div2 = MakeFrame(frame, { Size = UDim2.new(1, 0, 0, 1), Position = UDim2.fromOffset(0, 77), BackgroundTheme = "Border", BackgroundTransparency = 0.6 }); Gradient(div2, "BorderLight", "BgDarkest", 0)
-    local infoLbl = MakeLabel(frame, { Size = UDim2.new(1, 0, 0, 16), Position = UDim2.fromOffset(0, 83), Text = "Idle", TextTheme = "TextDim", TextSize = 12, Font = Enum.Font.GothamBold, TextTruncate = Enum.TextTruncate.AtEnd })
-    local subLbl = MakeLabel(frame, { Size = UDim2.new(1, 0, 0, 12), Position = UDim2.fromOffset(0, 101), Text = "", TextTheme = "TextMuted", TextSize = 9, Font = Enum.Font.Gotham, TextTruncate = Enum.TextTruncate.AtEnd })
+    local infoLbl = MakeLabel(frame, { Size = UDim2.new(1, 0, 0, 16), Position = UDim2.fromOffset(0, 83), Text = "Idle", TextTheme = "TextDim", TextSize = 13, Font = Enum.Font.GothamBold, TextTruncate = Enum.TextTruncate.AtEnd })
+    local subLbl = MakeLabel(frame, { Size = UDim2.new(1, 0, 0, 12), Position = UDim2.fromOffset(0, 101), Text = "", TextTheme = "TextMuted", TextSize = 10, Font = Enum.Font.Gotham, TextTruncate = Enum.TextTruncate.AtEnd })
     local progBg = MakeFrame(frame, { Size = UDim2.new(1, 0, 0, 3), Position = UDim2.new(0, 0, 1, -3), BackgroundTheme = "BgMain", BackgroundTransparency = 0.3, Visible = false })
     Corner(progBg, 1.5); Stroke(progBg, "Border", 1, 0.6)
     local progFill = MakeFrame(progBg, { Size = UDim2.new(0, 0, 1, 0), BackgroundTheme = "Accent" })
@@ -1492,8 +1558,8 @@ function Window:Tab(name, icon, width)
     Corner(bg, 8)
     local inner = MakeFrame(btn, { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 2 })
     CreateInstance("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6), VerticalAlignment = Enum.VerticalAlignment.Center, HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = inner })
-    local iconLbl = MakeLabel(inner, { Size = UDim2.fromOffset(16, 16), Text = icon or "", TextTheme = "TextMuted", TextSize = 13, TextXAlignment = Enum.TextXAlignment.Center, TextYAlignment = Enum.TextYAlignment.Center, LayoutOrder = 1, ZIndex = 3 })
-    local lbl = MakeLabel(inner, { Size = UDim2.new(0, 0, 0, 16), AutomaticSize = Enum.AutomaticSize.X, Text = string.upper(name), TextTheme = "TextDim", TextSize = 10, Font = Enum.Font.GothamBold, LayoutOrder = 2, ZIndex = 3 })
+    local iconLbl = MakeLabel(inner, { Size = UDim2.fromOffset(16, 16), Text = icon or "", TextTheme = "TextMuted", TextSize = 14, TextXAlignment = Enum.TextXAlignment.Center, TextYAlignment = Enum.TextYAlignment.Center, LayoutOrder = 1, ZIndex = 3 })
+    local lbl = MakeLabel(inner, { Size = UDim2.new(0, 0, 0, 16), AutomaticSize = Enum.AutomaticSize.X, Text = string.upper(name), TextTheme = "TextDim", TextSize = 11, Font = Enum.Font.GothamBold, LayoutOrder = 2, ZIndex = 3 })
     local page = MakeFrame(self.Content, { Name = name .. "Page", Size = UDim2.new(1, 0, 0, 0), BackgroundTransparency = 1, Visible = false })
     page.AutomaticSize = Enum.AutomaticSize.Y
     CreateInstance("UIListLayout", { Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder, Parent = page })
@@ -1535,11 +1601,11 @@ function Tab:Section(text)
     local holder = MakeFrame(self.Page, { Size = UDim2.new(1, 0, 0, 26), BackgroundTransparency = 1 })
     local bar = MakeFrame(holder, { Size = UDim2.fromOffset(3, 12), Position = UDim2.new(0, 4, 0.5, -6), BackgroundTheme = "Accent" })
     Corner(bar, 1.5)
-    MakeLabel(holder, { Size = UDim2.new(1, -16, 1, 0), Position = UDim2.fromOffset(12, 0), Text = string.upper(text), TextTheme = "TextMuted", TextSize = 9, Font = Enum.Font.GothamBold })
+    MakeLabel(holder, { Size = UDim2.new(1, -16, 1, 0), Position = UDim2.fromOffset(12, 0), Text = string.upper(text), TextTheme = "TextMuted", TextSize = 10, Font = Enum.Font.GothamBold })
 end
 function Tab:Label(text, opts)
     opts = opts or {}
-    return MakeLabel(self.Page, { Size = UDim2.new(1, 0, 0, opts.height or 20), Text = text, TextTheme = opts.theme or "Text", TextSize = opts.size or 10, Font = opts.font or Enum.Font.Gotham, TextWrapped = true, TextXAlignment = opts.align or Enum.TextXAlignment.Left })
+    return MakeLabel(self.Page, { Size = UDim2.new(1, 0, 0, opts.height or 20), Text = text, TextTheme = opts.theme or "Text", TextSize = opts.size or 11, Font = opts.font or Enum.Font.Gotham, TextWrapped = true, TextXAlignment = opts.align or Enum.TextXAlignment.Left })
 end
 
 function Tab:Toggle(opts)
@@ -1549,8 +1615,8 @@ function Tab:Toggle(opts)
     StyleCard(card, {radius = 10})
     local _, iconSt = MakeIconBadge(card, 28, UDim2.new(0, 14, 0.5, -14), icon)
     local textX = icon and 52 or 14; local textRight = 80
-    MakeLabel(card, { Size = UDim2.new(1, -textRight, 0, 16), Position = UDim2.fromOffset(textX, 10), Text = title, TextSize = 12, TextTheme = "TextBright", Font = Enum.Font.GothamBold })
-    MakeLabel(card, { Size = UDim2.new(1, -textRight, 0, 14), Position = UDim2.fromOffset(textX, 28), Text = desc, TextTheme = "TextDim", TextSize = 10, Font = Enum.Font.GothamMedium, TextTruncate = Enum.TextTruncate.AtEnd })
+    MakeLabel(card, { Size = UDim2.new(1, -textRight, 0, 16), Position = UDim2.fromOffset(textX, 10), Text = title, TextSize = 13, TextTheme = "TextBright", Font = Enum.Font.GothamBold })
+    MakeLabel(card, { Size = UDim2.new(1, -textRight, 0, 14), Position = UDim2.fromOffset(textX, 28), Text = desc, TextTheme = "TextDim", TextSize = 11, Font = Enum.Font.Gotham, TextTruncate = Enum.TextTruncate.AtEnd })
     local setToggle, getToggle = MakeSwitch(card, default, function(v)
         if iconSt then Tween(iconSt, {Color = v and Theme.Accent or Theme.Border, Transparency = v and 0.4 or 0.6}, 0.22) end
         if cb then cb(v) end
@@ -1565,7 +1631,6 @@ function Tab:Toggle(opts)
         window:OnHotkey(bindId, function()
             local newState = not getToggle()
             setToggle(newState, false)
-            -- ⚡ NOTIFICATION FIX: Уведомление о смене состояния бинда
             Notify.Push(title, "Toggled " .. (newState and "ON" or "OFF"), newState and "success" or "info", 2)
         end)
     end
@@ -1580,8 +1645,8 @@ function Tab:Slider(opts)
     local st = StyleCard(card, {radius = 10})
     MakeIconBadge(card, 28, UDim2.fromOffset(14, 10), icon)
     local textX = icon and 52 or 14; local textRight = 80
-    MakeLabel(card, { Size = UDim2.new(1, -textRight, 0, 16), Position = UDim2.fromOffset(textX, 10), Text = title, TextSize = 12, TextTheme = "TextBright", Font = Enum.Font.GothamBold })
-    MakeLabel(card, { Size = UDim2.new(1, -textRight, 0, 14), Position = UDim2.fromOffset(textX, 28), Text = desc, TextTheme = "TextDim", TextSize = 10, Font = Enum.Font.GothamMedium, TextTruncate = Enum.TextTruncate.AtEnd })
+    MakeLabel(card, { Size = UDim2.new(1, -textRight, 0, 16), Position = UDim2.fromOffset(textX, 10), Text = title, TextSize = 13, TextTheme = "TextBright", Font = Enum.Font.GothamBold })
+    MakeLabel(card, { Size = UDim2.new(1, -textRight, 0, 14), Position = UDim2.fromOffset(textX, 28), Text = desc, TextTheme = "TextDim", TextSize = 11, Font = Enum.Font.Gotham, TextTruncate = Enum.TextTruncate.AtEnd })
     local setVal, getVal = MakeSlider(card, min, max, default, cb, { decimals = decimals, pillWidth = 50,
         onDragStart = function() Tween(st, {Color = Theme.Accent, Transparency = 0.4}, 0.15) end,
         onDragEnd   = function() Tween(st, {Color = Theme.Border, Transparency = 0.7}, 0.15) end,
@@ -1596,7 +1661,6 @@ function Tab:Button(opts)
     local title = opts.Name or "Button"; local desc = opts.Description or ""; local cb = opts.Callback or function() end
     local style = opts.Style or "Primary"
     local card = Instance.new("TextButton")
-    -- ⚡ FIX: Отступы 8px слева/справа, чтобы тень и свечение не обрезались
     card.Size = UDim2.new(1, -16, 0, 48); card.Position = UDim2.fromOffset(8, 0); card.BackgroundTransparency = 0
     card.BorderSizePixel = 0; card.Text = ""; card.AutoButtonColor = false; card.Parent = self.Page
     card.TextStrokeTransparency = 1
@@ -1606,15 +1670,36 @@ function Tab:Button(opts)
     btnGrad.Rotation = 90; btnGrad.Parent = card
     
     local st = Stroke(card, "AccentSoft", 1.2, 0.2)
-    AddShadow(card, {themeKey = "Accent", transparency = 0.5, blur = 25, offset = Vector2.new(0, 5)})
+    AddShadow(card, {themeKey = "Accent", transparency = 0.5, blur = 10, offset = Vector2.new(0, 4)})
     
-    local titleLbl = MakeLabel(card, { Size = UDim2.new(1, 0, 0, 16), Position = UDim2.fromOffset(0, 6), Text = title, TextColor3 = Color3.new(1,1,1), TextSize = 12, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Center })
-    local descLbl = MakeLabel(card, { Size = UDim2.new(1, -20, 0, 14), Position = UDim2.fromOffset(10, 24), Text = desc, TextColor3 = Color3.new(1,1,1), TextTransparency = 0.3, TextSize = 9, Font = Enum.Font.GothamMedium, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center })
+    local titleLbl, descLbl
+    
+    -- ИСПРАВЛЕНИЕ ЦЕНТРИРОВАНИЯ
+    if desc == "" then
+        -- Если описания нет, центрируем текст по всей высоте кнопки
+        titleLbl = MakeLabel(card, { 
+            Size = UDim2.fromScale(1, 1), Position = UDim2.fromOffset(0, 0), 
+            Text = title, TextColor3 = Color3.new(1,1,1), TextSize = 13, 
+            Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Center 
+        })
+    else
+        -- Если описание есть, оставляем текст сверху
+        titleLbl = MakeLabel(card, { 
+            Size = UDim2.new(1, 0, 0, 16), Position = UDim2.fromOffset(0, 6), 
+            Text = title, TextColor3 = Color3.new(1,1,1), TextSize = 13, 
+            Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Center 
+        })
+        descLbl = MakeLabel(card, { 
+            Size = UDim2.new(1, -20, 0, 14), Position = UDim2.fromOffset(10, 24), 
+            Text = desc, TextColor3 = Color3.new(1,1,1), TextTransparency = 0.3, 
+            TextSize = 10, Font = Enum.Font.Gotham, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Center 
+        })
+    end
     
     local function updateStyle()
         if style == "Primary" then
             titleLbl.TextColor3 = Color3.new(1,1,1)
-            descLbl.TextColor3 = Color3.new(1,1,1)
+            if descLbl then descLbl.TextColor3 = Color3.new(1,1,1) end
             btnGrad.Color = ColorSequence.new({
                 ColorSequenceKeypoint.new(0, Theme.AccentSoft),
                 ColorSequenceKeypoint.new(0.5, Theme.Accent),
@@ -1624,13 +1709,13 @@ function Tab:Button(opts)
             st.Transparency = 0.2
         elseif style == "Secondary" then
             titleLbl.TextColor3 = Theme.Text
-            descLbl.TextColor3 = Theme.TextDim
+            if descLbl then descLbl.TextColor3 = Theme.TextDim end
             btnGrad.Color = ColorSequence.new(Theme.SurfaceBase, Theme.BgDarkest)
             st.Color = Theme.Border
             st.Transparency = 0.4
         elseif style == "Danger" then
             titleLbl.TextColor3 = Color3.new(1,1,1)
-            descLbl.TextColor3 = Color3.new(1,1,1)
+            if descLbl then descLbl.TextColor3 = Color3.new(1,1,1) end
             btnGrad.Color = ColorSequence.new({
                 ColorSequenceKeypoint.new(0, Theme.Danger:Lerp(Color3.new(1,1,1),0.2)),
                 ColorSequenceKeypoint.new(1, Theme.Danger)
@@ -1652,10 +1737,11 @@ function Tab:Button(opts)
     return obj
 end
 
+-- ⚡ FIXED BUTTON ROW (No clipping, correct sizing)
 function Tab:ButtonRow(opts)
     local buttons = opts.Buttons or {}
     if #buttons == 0 then return end
-    local row = MakeFrame(self.Page, { Size = UDim2.new(1, 0, 0, opts.Height or 40), BackgroundTransparency = 1 })
+    local row = MakeFrame(self.Page, { Size = UDim2.new(1, -2, 0, opts.Height or 40), BackgroundTransparency = 1 })
     local layout = Instance.new("UIListLayout")
     layout.FillDirection = Enum.FillDirection.Horizontal
     layout.Padding = UDim.new(0, 8)
@@ -1664,9 +1750,9 @@ function Tab:ButtonRow(opts)
 
     for i, data in ipairs(buttons) do
         local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(1/#buttons, -8, 1, 0)
-        btn.BackgroundColor3 = Theme.BgDarkest
-        btn.BackgroundTransparency = 0.4
+        btn.Size = UDim2.new(1/#buttons, -((#buttons - 1) * 8) / #buttons, 1, 0)
+        btn.BackgroundColor3 = Theme.SurfaceBase
+        btn.BackgroundTransparency = 0 
         btn.BorderSizePixel = 0
         btn.Text = ""
         btn.AutoButtonColor = false
@@ -1692,15 +1778,15 @@ function Tab:ButtonRow(opts)
         local lbl = MakeLabel(btn, {
             Size = UDim2.fromScale(1, 1),
             Text = string.upper(data.Name or "Button"),
-            TextSize = 12,
+            TextSize = 13,
             Font = Enum.Font.GothamBold,
             TextXAlignment = Enum.TextXAlignment.Center
         })
 
         local function updateStyle()
             if style == "Primary" then
-                btn.BackgroundTransparency = 0
-                lbl.TextColor3 = Color3.new(1,1,1)
+                lbl.TextColor3 = Theme.TextBright
+                btn.BackgroundColor3 = Theme.AccentDark -- Обновляем базовый фон
                 grad.Color = ColorSequence.new({
                     ColorSequenceKeypoint.new(0, Theme.AccentSoft),
                     ColorSequenceKeypoint.new(0.5, Theme.Accent),
@@ -1709,8 +1795,8 @@ function Tab:ButtonRow(opts)
                 stroke.Color = Theme.AccentSoft
                 stroke.Transparency = 0.2
             elseif style == "Danger" then
-                btn.BackgroundTransparency = 0
-                lbl.TextColor3 = Color3.new(1,1,1)
+                lbl.TextColor3 = Theme.TextBright
+                btn.BackgroundColor3 = Theme.Danger -- Обновляем базовый фон
                 grad.Color = ColorSequence.new({
                     ColorSequenceKeypoint.new(0, Theme.Danger:Lerp(Color3.new(1,1,1),0.2)),
                     ColorSequenceKeypoint.new(1, Theme.Danger)
@@ -1718,11 +1804,11 @@ function Tab:ButtonRow(opts)
                 stroke.Color = Theme.Danger
                 stroke.Transparency = 0.2
             else -- Secondary
-                btn.BackgroundTransparency = 0.4
                 lbl.TextColor3 = Theme.Text
-                grad.Color = ColorSequence.new(Theme.BgDarkest, Theme.BgMain)
+                btn.BackgroundColor3 = Theme.SurfaceBase -- Обновляем базовый фон
+                grad.Color = ColorSequence.new(Theme.SurfaceLight, Theme.SurfaceBase)
                 stroke.Color = Theme.BorderLight
-                stroke.Transparency = 0.5
+                stroke.Transparency = 0.4
             end
         end
 
@@ -1730,7 +1816,9 @@ function Tab:ButtonRow(opts)
         local unsub = ThemeSystem.Subscribe(updateStyle)
         TrackConnection(btn.Destroying:Connect(unsub))
 
-        ApplyHover(btn, {scale=1.015, stroke=stroke, hoverStrokeColor="TextBright", hoverStrokeTransp=0.1, baseStrokeColor=style == "Primary" and "AccentSoft" or "BorderLight"})
+        -- Используем стандартные эффекты, чтобы цвета корректно сбрасывались
+        local baseStroke = style == "Primary" and "AccentSoft" or (style == "Danger" and "Danger" or "BorderLight")
+        ApplyHover(btn, {scale=1.015, stroke=stroke, hoverStrokeColor="TextBright", hoverStrokeTransp=0.1, baseStrokeColor=baseStroke})
         ApplyPress(btn, {pressScale=0.98, hoverScale=1.015})
 
         TrackConnection(btn.MouseButton1Click:Connect(function()
@@ -1739,7 +1827,6 @@ function Tab:ButtonRow(opts)
     end
     return row
 end
-
 function Tab:Keybind(opts)
     local title = opts.Name or "Keybind"; local actionId = opts.ActionId or title
     local default = opts.Default; local desc = opts.Description or ""
@@ -1747,10 +1834,10 @@ function Tab:Keybind(opts)
     local card = MakeFrame(self.Page, { Size = UDim2.new(1, 0, 0, height), BackgroundTheme = "SurfaceBase", BackgroundTransparency = 0.5 })
     StyleCard(card, {radius = 10})
     if desc ~= "" then
-        MakeLabel(card, { Size = UDim2.new(1, -100, 0, 16), Position = UDim2.fromOffset(14, 10), Text = title, TextSize = 12, TextTheme = "TextBright", Font = Enum.Font.GothamBold })
-        MakeLabel(card, { Size = UDim2.new(1, -100, 0, 14), Position = UDim2.fromOffset(14, 28), Text = desc, TextTheme = "TextDim", TextSize = 10, TextTruncate = Enum.TextTruncate.AtEnd })
+        MakeLabel(card, { Size = UDim2.new(1, -100, 0, 16), Position = UDim2.fromOffset(14, 10), Text = title, TextSize = 13, TextTheme = "TextBright", Font = Enum.Font.GothamBold })
+        MakeLabel(card, { Size = UDim2.new(1, -100, 0, 14), Position = UDim2.fromOffset(14, 28), Text = desc, TextTheme = "TextDim", TextSize = 11, Font = Enum.Font.Gotham, TextTruncate = Enum.TextTruncate.AtEnd })
     else
-        MakeLabel(card, { Size = UDim2.new(1, -100, 1, 0), Position = UDim2.fromOffset(14, 0), Text = title, TextSize = 12, TextTheme = "TextBright", Font = Enum.Font.GothamBold })
+        MakeLabel(card, { Size = UDim2.new(1, -100, 1, 0), Position = UDim2.fromOffset(14, 0), Text = title, TextSize = 13, TextTheme = "TextBright", Font = Enum.Font.GothamBold })
     end
     if default and not BindSystem.Bindings[actionId] then BindSystem.Set(actionId, {type = "key", value = default}, false) end
     MakeKeycap(card, actionId)
@@ -1764,26 +1851,27 @@ function Tab:TextBox(opts)
     local card = MakeFrame(self.Page, { Size = UDim2.new(1, 0, 0, 64), BackgroundTheme = "SurfaceBase", BackgroundTransparency = 0.5 })
     StyleCard(card, {radius = 10})
     if desc ~= "" then
-        MakeLabel(card, { Size = UDim2.new(1, -20, 0, 16), Position = UDim2.fromOffset(14, 8), Text = title, TextSize = 12, TextTheme = "TextBright", Font = Enum.Font.GothamBold })
-        MakeLabel(card, { Size = UDim2.new(1, -20, 0, 14), Position = UDim2.fromOffset(14, 24), Text = desc, TextTheme = "TextDim", TextSize = 10 })
+        MakeLabel(card, { Size = UDim2.new(1, -20, 0, 16), Position = UDim2.fromOffset(14, 8), Text = title, TextSize = 13, TextTheme = "TextBright", Font = Enum.Font.GothamBold })
+        MakeLabel(card, { Size = UDim2.new(1, -20, 0, 14), Position = UDim2.fromOffset(14, 24), Text = desc, TextTheme = "TextDim", TextSize = 11, Font = Enum.Font.Gotham })
     else
-        MakeLabel(card, { Size = UDim2.new(0.4, 0, 1, 0), Position = UDim2.fromOffset(14, 0), Text = title, TextSize = 12, TextTheme = "TextBright", Font = Enum.Font.GothamBold })
+        MakeLabel(card, { Size = UDim2.new(0.4, 0, 1, 0), Position = UDim2.fromOffset(14, 0), Text = title, TextSize = 13, TextTheme = "TextBright", Font = Enum.Font.GothamBold })
     end
     local box = Instance.new("TextBox")
     box.Size = desc ~= "" and UDim2.new(1, -28, 0, 22) or UDim2.new(0.55, 0, 0, 28)
     box.Position = desc ~= "" and UDim2.new(0, 14, 0, 40) or UDim2.new(0.45, -14, 0.5, -14)
     box.BackgroundColor3 = Theme.BgDarkest; box.BackgroundTransparency = 0.4; box.BorderSizePixel = 0
     box.Text = default; box.PlaceholderText = opts.Placeholder or "Type here..."
-    box.PlaceholderColor3 = Theme.TextMuted; box.TextColor3 = Theme.Text; box.TextSize = 11
+    box.PlaceholderColor3 = Theme.TextMuted; box.TextColor3 = Theme.Text; box.TextSize = 12
     box.TextStrokeTransparency = 1
-    box.Font = Enum.Font.Code; box.TextXAlignment = Enum.TextXAlignment.Left; box.ClearTextOnFocus = false; box.Parent = card
-    ThemeSystem.Bind(box, {BackgroundColor3 = "BgDarkest", TextColor3 = "Text"}); Corner(box, 6); Stroke(box, "Border", 1, 0.6); Pad(box, 0, 8, 0, 8)
+    box.Font = Enum.Font.Gotham; box.TextXAlignment = Enum.TextXAlignment.Left; box.ClearTextOnFocus = false; box.Parent = card
+    ThemeSystem.Bind(box, {BackgroundColor3 = "BgDarkest", TextColor3 = "Text", PlaceholderColor3 = "TextMuted"}); Corner(box, 6); Stroke(box, "Border", 1, 0.6); Pad(box, 0, 8, 0, 8)
     TrackConnection(box.FocusLost:Connect(function() if cb then cb(box.Text) end end))
     local obj = { Instance = card, TextBox = box, Get = function() return box.Text end, Set = function(_, v) box.Text = v end }
     setmetatable(obj, { __call = function(_, v) box.Text = v end })
     return obj
 end
 
+-- ⚡ FIXED LIST (Restored AddItem)
 function Tab:List(opts)
     local size = opts.Size or UDim2.new(1, 0, 0, 200)
     local container = MakeFrame(self.Page, { Size = size, BackgroundTransparency = 1 })
@@ -1792,61 +1880,126 @@ function Tab:List(opts)
     scroll.ScrollBarThickness = 2; scroll.ScrollBarImageColor3 = Theme.Border
     scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y; scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
     scroll.Parent = container
+    
+    local padding = Instance.new("UIPadding")
+    padding.PaddingTop = UDim.new(0, 4)
+    padding.PaddingBottom = UDim.new(0, 4)
+    padding.PaddingLeft = UDim.new(0, 8)
+    padding.PaddingRight = UDim.new(0, 8)
+    padding.Parent = scroll
+    
     CreateInstance("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder, Parent = scroll })
+    
     local listObj = {}
     function listObj:AddItem(itemOpts)
-        -- ⚡ FIX: Отступы 8px слева/справа, чтобы обводка не обрезалась
-        local card = MakeFrame(scroll, { Size = UDim2.new(1, -16, 0, 54), Position = UDim2.fromOffset(8, 0), BackgroundTheme = "SurfaceBase", BackgroundTransparency = 0.4 })
-        StyleCard(card, {radius = 8}); Pad(card, 8, 12, 8, 12)
-        local icon = itemOpts.Icon or "📄"; local title = itemOpts.Title or "Item"; local sub = itemOpts.Subtitle or ""
-        MakeLabel(card, { Size = UDim2.fromOffset(30, 30), Position = UDim2.new(0, 0, 0.5, -15), Text = icon, TextSize = 16, TextXAlignment = Enum.TextXAlignment.Center, TextYAlignment = Enum.TextYAlignment.Center })
-        MakeLabel(card, { Size = UDim2.new(1, -130, 0, 16), Position = UDim2.fromOffset(36, 4), Text = title, TextSize = 11, TextTheme = "TextBright", Font = Enum.Font.GothamBold, TextTruncate = Enum.TextTruncate.AtEnd })
-        MakeLabel(card, { Size = UDim2.new(1, -130, 0, 12), Position = UDim2.fromOffset(36, 22), Text = sub, TextTheme = "TextDim", TextSize = 9, Font = Enum.Font.Code, TextTruncate = Enum.TextTruncate.AtEnd })
-        if itemOpts.OnPlay then
-            local playBtn = Instance.new("TextButton")
-            playBtn.Size = UDim2.fromOffset(24, 24); playBtn.Position = UDim2.new(1, -56, 0.5, -12)
-            playBtn.BackgroundColor3 = Theme.Accent; playBtn.BackgroundTransparency = 0.2; playBtn.Text = "▶"
-            playBtn.TextColor3 = Theme.TextBright; playBtn.TextSize = 12; playBtn.Font = Enum.Font.GothamBold; playBtn.AutoButtonColor = false
-            playBtn.TextStrokeTransparency = 1; playBtn.Parent = card; Corner(playBtn, 6); Stroke(playBtn, "Accent", 1, 0.4)
-            ApplyHover(playBtn, {scale=1.1}); ApplyPress(playBtn, {pressScale=0.9})
-            TrackConnection(playBtn.MouseButton1Click:Connect(itemOpts.OnPlay))
+        local actions = {}
+        if itemOpts.OnPlay then table.insert(actions, {Icon = "▶", Style = "Primary", Callback = itemOpts.OnPlay}) end
+        if itemOpts.OnDelete then table.insert(actions, {Icon = "🗑", Style = "Secondary", Callback = itemOpts.OnDelete}) end
+        if itemOpts.Actions then
+            for _, act in ipairs(itemOpts.Actions) do table.insert(actions, act) end
         end
-        if itemOpts.OnDelete then
-            local delBtn = Instance.new("TextButton")
-            delBtn.Size = UDim2.fromOffset(24, 24); delBtn.Position = UDim2.new(1, -28, 0.5, -12)
-            delBtn.BackgroundColor3 = Theme.SurfaceLight; delBtn.BackgroundTransparency = 0.3; delBtn.Text = "🗑"
-            delBtn.TextColor3 = Theme.TextDim; delBtn.TextSize = 12; delBtn.Font = Enum.Font.GothamBold; delBtn.AutoButtonColor = false
-            delBtn.TextStrokeTransparency = 1; delBtn.Parent = card; Corner(delBtn, 6); Stroke(delBtn, "Border", 1, 0.6)
-            ApplyHover(delBtn, {scale=1.1}); ApplyPress(delBtn, {scale=1.1, pressScale=0.9})
-            TrackConnection(delBtn.MouseButton1Click:Connect(itemOpts.OnDelete))
+
+        local card = MakeFrame(scroll, { Size = UDim2.new(1, 0, 0, 54), BackgroundTheme = "SurfaceBase", BackgroundTransparency = 0.4 })
+        local st = StyleCard(card, {radius = 8})
+        Pad(card, 8, 12, 8, 12)
+        
+        local icon = itemOpts.Icon or "📄"
+        local title = itemOpts.Title or "Item"
+        local sub = itemOpts.Subtitle or ""
+        
+        MakeLabel(card, { Size = UDim2.fromOffset(30, 30), Position = UDim2.new(0, 0, 0.5, -15), Text = icon, TextSize = 16, TextXAlignment = Enum.TextXAlignment.Center, TextYAlignment = Enum.TextYAlignment.Center })
+        MakeLabel(card, { Size = UDim2.new(1, -130, 0, 16), Position = UDim2.fromOffset(36, 4), Text = title, TextSize = 12, TextTheme = "TextBright", Font = Enum.Font.GothamBold, TextTruncate = Enum.TextTruncate.AtEnd })
+        MakeLabel(card, { Size = UDim2.new(1, -130, 0, 12), Position = UDim2.fromOffset(36, 22), Text = sub, TextTheme = "TextDim", TextSize = 10, Font = Enum.Font.Gotham, TextTruncate = Enum.TextTruncate.AtEnd })
+        
+        local actionContainer = MakeFrame(card, { Size = UDim2.fromOffset(0, 24), Position = UDim2.new(1, -12, 0.5, -12), AnchorPoint = Vector2.new(1, 0), BackgroundTransparency = 1 })
+        actionContainer.AutomaticSize = Enum.AutomaticSize.X
+        local actLayout = Instance.new("UIListLayout")
+        actLayout.FillDirection = Enum.FillDirection.Horizontal
+        actLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+        actLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+        actLayout.Padding = UDim.new(0, 6)
+        actLayout.Parent = actionContainer
+        
+        for i, act in ipairs(actions) do
+            local btn = Instance.new("TextButton")
+            btn.Size = UDim2.fromOffset(24, 24)
+            btn.BackgroundTransparency = 0
+            btn.BorderSizePixel = 0
+            btn.Text = act.Icon or "▶"
+            btn.TextSize = 12
+            btn.Font = Enum.Font.GothamBold
+            btn.AutoButtonColor = false
+            btn.TextStrokeTransparency = 1
+            btn.LayoutOrder = i
+            btn.Parent = actionContainer
+            
+            Corner(btn, 6)
+            local btnSt = Stroke(btn, "Border", 1, 0.6)
+            
+            local function applyActionStyle()
+                local style = act.Style or "Secondary"
+                if style == "Primary" then
+                    btn.BackgroundColor3 = Theme.Accent
+                    btn.TextColor3 = Theme.TextBright
+                    btnSt.Color = Theme.AccentSoft
+                    btnSt.Transparency = 0.4
+                elseif style == "Danger" then
+                    btn.BackgroundColor3 = Theme.Danger
+                    btn.TextColor3 = Theme.TextBright
+                    btnSt.Color = Theme.Danger
+                    btnSt.Transparency = 0.4
+                else
+                    btn.BackgroundColor3 = Theme.SurfaceLight
+                    btn.TextColor3 = Theme.TextDim
+                    btnSt.Color = Theme.Border
+                    btnSt.Transparency = 0.6
+                end
+            end
+            
+            applyActionStyle()
+            local unsub = ThemeSystem.Subscribe(applyActionStyle)
+            TrackConnection(btn.Destroying:Connect(unsub))
+            
+            ApplyHover(btn, {scale=1.0, stroke=btnSt, hoverStrokeColor="TextBright", hoverStrokeTransp=0.2, baseStrokeColor="Border"})
+            ApplyPress(btn, {pressScale=0.9, hoverScale=1.0})
+            
+            TrackConnection(btn.MouseButton1Click:Connect(function()
+                if act.Callback then pcall(act.Callback) end
+            end))
         end
         return card
     end
+    
     function listObj:Clear()
         for _, c in ipairs(scroll:GetChildren()) do if c:IsA("GuiObject") then c:Destroy() end end
     end
     return listObj
 end
 
+-- ⚡ FIXED DROPDOWN (self.Window.ScreenGui, outside click close)
 function Tab:Dropdown(opts)
     local title = opts.Name or "Dropdown"; local items = opts.Items or {}
     local default = opts.Default or (items[1] or "None"); local cb = opts.Callback
     local card = MakeFrame(self.Page, { Size = UDim2.new(1, 0, 0, 52), BackgroundTheme = "SurfaceBase", BackgroundTransparency = 0.5 })
     StyleCard(card, {radius = 10}); Pad(card, 10, 14, 10, 14)
-    MakeLabel(card, { Size = UDim2.new(1, -100, 1, 0), Text = title, TextSize = 12, TextTheme = "TextBright", Font = Enum.Font.GothamBold })
+    MakeLabel(card, { Size = UDim2.new(1, -100, 1, 0), Text = title, TextSize = 13, TextTheme = "TextBright", Font = Enum.Font.GothamBold })
     local current = default
     local selectedBtn = Instance.new("TextButton")
     selectedBtn.Size = UDim2.fromOffset(90, 28); selectedBtn.Position = UDim2.new(1, -90, 0.5, -14)
     selectedBtn.BackgroundColor3 = Theme.SurfaceLight; selectedBtn.BackgroundTransparency = 0.2
-    selectedBtn.Text = current; selectedBtn.TextColor3 = Theme.Text; selectedBtn.TextSize = 10; selectedBtn.Font = Enum.Font.GothamBold
+    selectedBtn.Text = current; selectedBtn.TextColor3 = Theme.Text; selectedBtn.TextSize = 11; selectedBtn.Font = Enum.Font.GothamBold
     selectedBtn.TextStrokeTransparency = 1; selectedBtn.AutoButtonColor = false; selectedBtn.Parent = card
     Corner(selectedBtn, 6); Stroke(selectedBtn, "Border", 1, 0.5)
-    local menu = MakeFrame(self.ScreenGui, { Size = UDim2.fromOffset(90, 0), BackgroundTheme = "BgDarkest", BackgroundTransparency = 0.05, Visible = false, ZIndex = 100 })
+    
+    -- ИСПРАВЛЕНИЕ: self.Window.ScreenGui вместо self.ScreenGui
+    local menu = MakeFrame(self.Window.ScreenGui, { Size = UDim2.fromOffset(90, 0), BackgroundTheme = "BgDarkest", BackgroundTransparency = 0.05, Visible = false, ZIndex = 100 })
     Corner(menu, 6); Stroke(menu, "BorderLight", 1, 0.4)
     local list = Instance.new("UIListLayout"); list.Parent = menu
     local menuScale = EnsureUIScale(menu); menuScale.Scale = 0.9
     local isOpen = false
+    
     local function closeMenu() isOpen = false; menu.Visible = false; Tween(menuScale, {Scale=0.9}, 0.15); Tween(menu, {Size=UDim2.fromOffset(90, 0)}, 0.15) end
+    
     TrackConnection(selectedBtn.MouseButton1Click:Connect(function()
         if isOpen then closeMenu() return end
         isOpen = true
@@ -1855,10 +2008,24 @@ function Tab:Dropdown(opts)
         Tween(menu, {Size = UDim2.fromOffset(90, #items * 26)}, 0.25, Enum.EasingStyle.Quint)
         Tween(menuScale, {Scale = 1}, 0.25, Enum.EasingStyle.Back)
     end))
+    
+    -- Закрытие при клике вне меню
+    TrackConnection(UserInputService.InputBegan:Connect(function(input)
+        if not isOpen then return end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            local pos = input.Position
+            local function inB(inst)
+                local ap, as = inst.AbsolutePosition, inst.AbsoluteSize
+                return pos.X >= ap.X and pos.X <= ap.X + as.X and pos.Y >= ap.Y and pos.Y <= ap.Y + as.Y
+            end
+            if not inB(menu) and not inB(selectedBtn) then closeMenu() end
+        end
+    end))
+
     for _, item in ipairs(items) do
         local btn = Instance.new("TextButton")
         btn.Size = UDim2.new(1, 0, 0, 26); btn.BackgroundTransparency = 1
-        btn.Text = item; btn.TextColor3 = Theme.TextDim; btn.TextSize = 10; btn.Font = Enum.Font.GothamMedium
+        btn.Text = item; btn.TextColor3 = Theme.TextDim; btn.TextSize = 11; btn.Font = Enum.Font.Gotham
         btn.TextStrokeTransparency = 1
         btn.TextXAlignment = Enum.TextXAlignment.Left; btn.AutoButtonColor = false; btn.Parent = menu; Pad(btn, 0, 8, 0, 8)
         TrackConnection(btn.MouseButton1Click:Connect(function() current = item; selectedBtn.Text = item; if cb then cb(item) end; closeMenu() end))
@@ -1876,34 +2043,60 @@ function Tab:Custom(opts)
 end
 
 --============================================================
--- CONFIG
+-- CONFIG (FULLY REWRITTEN)
 --============================================================
 function Window:_LoadConfig()
     if not self.ConfigPath then return end
     local ok, data = pcall(function()
-        if not (isfile and isfile(self.ConfigPath)) then return nil end
-        return HttpService:JSONDecode(readfile(self.ConfigPath))
+        if isfile and isfile(self.ConfigPath) then
+            return HttpService:JSONDecode(readfile(self.ConfigPath))
+        end
+        return nil
     end)
     if not ok or type(data) ~= "table" then return end
-    if data.Theme and Themes[data.Theme] then ThemeSystem.Apply(data.Theme, true); self:RefreshThemeDots() end
-    if data.Size then self.Width = data.Size.W or self.Width; self.Height = data.Size.H or self.Height; self:_ApplySize(self.Width, self.Height) end
-    if data.MainFramePos then self._SavedPos = UDim2.fromOffset(data.MainFramePos.X or 100, data.MainFramePos.Y or 100) end
+
+    if data.Theme and Themes[data.Theme] then
+        ThemeSystem.Apply(data.Theme, true)
+        self:RefreshThemeDots()
+    end
+    if data.Size then
+        self.Width = data.Size.W or self.Width
+        self.Height = data.Size.H or self.Height
+        self:_ApplySize(self.Width, self.Height)
+    end
+    if data.Position then
+        self._SavedPos = UDim2.fromOffset(data.Position.X or 100, data.Position.Y or 100)
+    end
     if type(data.Hotkeys) == "table" then
         for actionId, val in pairs(data.Hotkeys) do
-            if type(val) == "table" then BindSystem.Bindings[actionId] = BindSystem.Deserialize(val); BindSystem.UpdateButton(actionId) end
+            if type(val) == "table" then
+                BindSystem.Bindings[actionId] = BindSystem.Deserialize(val)
+                BindSystem.UpdateButton(actionId)
+            end
         end
     end
 end
+
 function Window:SaveConfig()
     if not self.ConfigPath then return end
     local pos = self._SavedPos or self.MainFrame.Position
-    local data = { version = SCRIPT_VERSION, Theme = CurrentThemeName, Size = {W = self.Width, H = self.Height}, MainFramePos = {X = pos.X.Offset, Y = pos.Y.Offset}, Hotkeys = {} }
-    for actionId in pairs(BindSystem.Bindings) do data.Hotkeys[actionId] = BindSystem.Serialize(actionId) end
+    local data = {
+        Version = SCRIPT_VERSION,
+        Theme = CurrentThemeName,
+        Size = {W = self.Width, H = self.Height},
+        Position = {X = pos.X.Offset, Y = pos.Y.Offset},
+        Hotkeys = {}
+    }
+    for actionId in pairs(BindSystem.Bindings) do
+        data.Hotkeys[actionId] = BindSystem.Serialize(actionId)
+    end
     local ok, encoded = pcall(function() return HttpService:JSONEncode(data) end)
     if ok and encoded then
         pcall(function()
             local folder = self.ConfigPath:match("^(.*)/[^/]+$")
-            if folder and isfolder and makefolder and not isfolder(folder) then makefolder(folder) end
+            if folder and isfolder and makefolder and not isfolder(folder) then
+                makefolder(folder)
+            end
             writefile(self.ConfigPath, encoded)
         end)
     end
@@ -1913,12 +2106,24 @@ end
 -- PUBLIC API
 --============================================================
 local UI = {}
-UI.Version = SCRIPT_VERSION; UI.Themes = Themes; UI.ThemeOrder = ThemeOrder; UI.Bindings = BindSystem; UI.Refs = {Toggle = ToggleRefs, Slider = SliderRefs}; UI.Notify = Notify
-UI.GUI = { MakeFrame = MakeFrame, MakeLabel = MakeLabel, Corner = Corner, Gradient = Gradient, Stroke = Stroke, Pad = Pad, AddShadow = AddShadow, EnsureUIScale = EnsureUIScale, ApplyHover = ApplyHover, ApplyPress = ApplyPress, ThemeSystem = ThemeSystem, GetTheme = function() return Theme end, CreateInstance = CreateInstance }
+UI.Version = SCRIPT_VERSION
+UI.Themes = Themes
+UI.ThemeOrder = ThemeOrder
+UI.Bindings = BindSystem
+UI.Refs = {Toggle = ToggleRefs, Slider = SliderRefs}
+UI.Notify = Notify -- Теперь это таблица, и UI.Notify.Push будет работать!
+
+UI.GUI = { 
+    MakeFrame = MakeFrame, MakeLabel = MakeLabel, Corner = Corner, Gradient = Gradient, 
+    Stroke = Stroke, Pad = Pad, AddShadow = AddShadow, EnsureUIScale = EnsureUIScale, 
+    ApplyHover = ApplyHover, ApplyPress = ApplyPress, ThemeSystem = ThemeSystem, 
+    GetTheme = function() return Theme end, CreateInstance = CreateInstance 
+}
+
 function UI:CreateWindow(opts) return Window.new(opts) end
-function UI:Notify(...) Notify.Push(...) end
 function UI:SetTheme(name) ThemeSystem.Apply(name) end
 function UI:GetThemeName() return CurrentThemeName end
 function UI:GetTheme() return Theme end
 function UI:SetNotificationsEnabled(v) Notify.enabled = v end
+
 return UI
