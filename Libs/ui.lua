@@ -679,7 +679,7 @@ local function GetPlayerThumb(userId, size)
     size = size or 150
     return string.format("rbxthumb://type=AvatarHeadShot&id=%d&w=%d&h=%d", userId, size, size)
 end
-local function MakeDraggableClickable(frame, onClick)
+local function MakeDraggableClickable(frame, onClick, onEnd) -- ДОБАВЛЕН onEnd
     local startPos, dragStart; local moved = false; local dragging = false
     TrackConnection(frame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -708,6 +708,7 @@ local function MakeDraggableClickable(frame, onClick)
                     if moveConn then moveConn:Disconnect() end
                     if endConn then endConn:Disconnect() end
                     if not moved and onClick then onClick() end
+                    if moved and onEnd then onEnd() end -- ВЫЗОВ onEnd ПРИ ПЕРЕТАСКИВАНИИ
                 end
             end)
             TrackConnection(moveConn); TrackConnection(endConn)
@@ -718,7 +719,9 @@ end
 --============================================================
 -- COMPONENTS
 --============================================================
-local ToggleRefs, SliderRefs = {}, {}
+local ToggleRefs, SliderRefs = {}, {} -- Для UI.Refs.Toggle (по названию кнопки)
+local ToggleGetters, SliderGetters = {}, {} -- Для сохранения (по ConfigKey)
+local ToggleLookup, SliderLookup = {}, {} -- Для загрузки (по ConfigKey)
 
 local function StyleCard(card, opts)
     opts = opts or {}; Corner(card, opts.radius or 10)
@@ -1078,7 +1081,9 @@ function Window:_Build()
 
     self:_MakeResizeHandle()
     self:_MakeWindowDrag()
-    MakeDraggableClickable(self.LauncherIcon, function() if self.IsVisible then self:Hide() else self:Show() end end)
+    MakeDraggableClickable(self.LauncherIcon, function() if self.IsVisible then self:Hide() else self:Show() end end, function() 
+        if self.ConfigPath then self:SaveConfig() end 
+    end)
     self:_BuildSettingsPanel()
     self:_HookInput()
     local unsubTheme = ThemeSystem.Subscribe(function()
@@ -1288,7 +1293,11 @@ function Window:_CloseSettings(instant)
     if not self.ThemeMenuOpen then return end
     self.ThemeMenuOpen = false
     local p = self.SettingsPanel
+    if not p then return end
+    
+    -- Если передан instant, скрываем без анимации
     if instant then p.Visible = false; return end
+    
     local target = self._PanelTargetPos or p.Position; local dir = self._PanelSlideDir or 1
     local uiScale = EnsureUIScale(p)
     Tween(p, {Position = UDim2.fromOffset(target.X.Offset + 20 * dir, target.Y.Offset)}, 0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
@@ -1394,6 +1403,10 @@ end
 function Window:Hide()
     if not self.IsVisible or self._isDestroying or self._destroyed then return end
     self.IsVisible = false
+    
+    -- ⚡ ДОБАВЛЕНА ЭТА СТРОКА: принудительно закрываем меню настроек
+    if self.ThemeMenuOpen then self:_CloseSettings(true) end 
+
     self._animToken = (self._animToken or 0) + 1
     local token = self._animToken
     self._SavedPos = UDim2.fromOffset(
@@ -1621,8 +1634,12 @@ function Tab:Toggle(opts)
         if iconSt then Tween(iconSt, {Color = v and Theme.Accent or Theme.Border, Transparency = v and 0.4 or 0.6}, 0.22) end
         if cb then cb(v) end
     end, {width = 46, height = 24, knobSize = 18, padRight = 14})
-    ToggleRefs[title] = setToggle
-    local obj = { Instance = card, Set = function(_, v) setToggle(v, false) end, Get = function() return getToggle() end, Toggle = setToggle }
+    local uiName = opts.Name or "Toggle"
+    local cfgKey = opts.ConfigKey or uiName
+    ToggleRefs[uiName] = setToggle
+    ToggleGetters[cfgKey] = getToggle
+    ToggleLookup[cfgKey] = setToggle
+	local obj = { Instance = card, Set = function(_, v) setToggle(v, false) end, Get = function() return getToggle() end, Toggle = setToggle }
     setmetatable(obj, { __call = function(_, v) setToggle(v) end })
     local bindId = opts.Hotkey or opts.Bind or opts.ActionId
     if bindId then
@@ -1651,7 +1668,11 @@ function Tab:Slider(opts)
         onDragStart = function() Tween(st, {Color = Theme.Accent, Transparency = 0.4}, 0.15) end,
         onDragEnd   = function() Tween(st, {Color = Theme.Border, Transparency = 0.7}, 0.15) end,
     })
-    SliderRefs[title] = setVal
+	local uiName = opts.Name or "Slider"
+    local cfgKey = opts.ConfigKey or uiName
+    SliderRefs[uiName] = setVal
+    SliderGetters[cfgKey] = getVal
+    SliderLookup[cfgKey] = setVal
     local obj = { Instance = card, Set = function(_, v) setVal(v, false) end, Get = function() return getVal() end, Setter = setVal }
     setmetatable(obj, { __call = function(_, v) setVal(v) end })
     return obj
@@ -2067,6 +2088,10 @@ function Window:_LoadConfig()
     if data.Position then
         self._SavedPos = UDim2.fromOffset(data.Position.X or 100, data.Position.Y or 100)
     end
+    -- ⚡ ЗАГРУЗКА ПОЗИЦИИ ЛАУНЧЕРА
+    if data.LauncherPosition then
+        self.LauncherIcon.Position = UDim2.fromOffset(data.LauncherPosition.X or 16, data.LauncherPosition.Y or 16)
+    end
     if type(data.Hotkeys) == "table" then
         for actionId, val in pairs(data.Hotkeys) do
             if type(val) == "table" then
@@ -2075,21 +2100,48 @@ function Window:_LoadConfig()
             end
         end
     end
+    -- ⚡ ЗАГРУЖАЕМ ПО КЛЮЧАМ КОНФИГА
+    if type(data.Toggles) == "table" then
+        for cfgKey, val in pairs(data.Toggles) do
+            if ToggleLookup[cfgKey] then ToggleLookup[cfgKey](val) end
+        end
+    end
+    if type(data.Sliders) == "table" then
+        for cfgKey, val in pairs(data.Sliders) do
+            if SliderLookup[cfgKey] then SliderLookup[cfgKey](val) end
+        end
+    end
 end
 
 function Window:SaveConfig()
     if not self.ConfigPath then return end
     local pos = self._SavedPos or self.MainFrame.Position
+    local launcherPos = self.LauncherIcon.Position
+    
     local data = {
         Version = SCRIPT_VERSION,
         Theme = CurrentThemeName,
         Size = {W = self.Width, H = self.Height},
         Position = {X = pos.X.Offset, Y = pos.Y.Offset},
-        Hotkeys = {}
+        LauncherPosition = {X = launcherPos.X.Offset, Y = launcherPos.Y.Offset}, -- ⚡ СОХРАНЕНИЕ ЛАУНЧЕРА
+        Hotkeys = {},
+        Toggles = {}, -- ⚡ СОХРАНЕНИЕ ТУБЛЕРОВ
+        Sliders = {}  -- ⚡ СОХРАНЕНИЕ СЛАЙДЕРОВ
     }
+    
     for actionId in pairs(BindSystem.Bindings) do
         data.Hotkeys[actionId] = BindSystem.Serialize(actionId)
     end
+    
+    -- ⚡ СОБИРАЕМ ПО КЛЮЧАМ КОНФИГА (BhopEnabled, MaxSpeed и т.д.)
+    for cfgKey, getter in pairs(ToggleGetters) do
+        data.Toggles[cfgKey] = getter()
+    end
+    
+    for cfgKey, getter in pairs(SliderGetters) do
+        data.Sliders[cfgKey] = getter()
+    end
+    
     local ok, encoded = pcall(function() return HttpService:JSONEncode(data) end)
     if ok and encoded then
         pcall(function()
