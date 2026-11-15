@@ -1,5 +1,5 @@
 --============================================================
--- NoclipovUI v4.9.0 — Premium Edition (Final Polish)
+-- NoclipovUI v4.9.1 — Premium Edition (Clipping & Glow Fixes)
 --============================================================
 local UserInputService = game:GetService("UserInputService")
 local TweenService     = game:GetService("TweenService")
@@ -10,7 +10,7 @@ local Players          = game:GetService("Players")
 local ContentProvider  = game:GetService("ContentProvider")
 local TextService      = game:GetService("TextService")
 
-local SCRIPT_VERSION = "4.9.0"
+local SCRIPT_VERSION = "4.9.1"
 local UI_NAME        = "NoclipovUI"
 local LocalPlayer    = Players.LocalPlayer
 
@@ -573,7 +573,7 @@ local function Pad(p, t, r, b, l)
     x.Parent = p; return p
 end
 
--- ⚡ FIX: Улучшенный AddShadow без обрезания (использует ImageLabel как фолбэк)
+-- ⚡ FIX: Улучшенный AddShadow без обрезания
 local function AddShadow(p, opts)
     opts = opts or {}
     local ok, sh = pcall(function() return Instance.new("UIShadow") end)
@@ -588,14 +588,13 @@ local function AddShadow(p, opts)
         pcall(function() sh.Offset = opts.offset or Vector2.new(0, 6) end)
         sh.Parent = p; return sh
     end
-    -- Fallback: ImageLabel не обрезается рамками родителя
     local shadowImg = Instance.new("ImageLabel")
     shadowImg.Name = "ShadowImg"
     shadowImg.AnchorPoint = Vector2.new(0.5, 0.5)
     shadowImg.Position = UDim2.new(0.5, opts.offset and opts.offset.X or 0, 0.5, opts.offset and opts.offset.Y or 0)
     shadowImg.Size = UDim2.new(1, (opts.blur or 24) * 2, 1, (opts.blur or 24) * 2)
     shadowImg.BackgroundTransparency = 1
-    shadowImg.Image = "rbxassetid://1316045217" -- Стандартная тень (9-slice)
+    shadowImg.Image = "rbxassetid://1316045217"
     shadowImg.ImageColor3 = opts.themeKey and Theme[opts.themeKey] or opts.color or Theme.BgDarkest
     shadowImg.ImageTransparency = opts.transparency or 0.6
     shadowImg.ScaleType = Enum.ScaleType.Slice
@@ -629,7 +628,7 @@ local function MakeLabel(parent, props)
     l.TextYAlignment = props.TextYAlignment or Enum.TextYAlignment.Center
     l.TextWrapped = props.TextWrapped or false; l.TextTruncate = props.TextTruncate or Enum.TextTruncate.None
     l.RichText = props.RichText or false; l.ZIndex = props.ZIndex or 1
-    l.TextStrokeTransparency = 1 -- ⚡ FIX: Убираем размытие текста
+    l.TextStrokeTransparency = 1
     if props.AutomaticSize then l.AutomaticSize = props.AutomaticSize end
     if props.TextTransparency then l.TextTransparency = props.TextTransparency end
     l.Parent = parent
@@ -832,7 +831,6 @@ local function MakeKeycap(parent, actionId)
     ThemeSystem.Bind(btn, {BackgroundColor3 = "SurfaceLight"}); Corner(btn, 6)
     local st = Stroke(btn, "Border", 1, 0.5)
     
-    -- ⚡ FIX: Убрано масштабирование (scale=1.0), чтобы текст не получал артефакты при наведении
     ApplyHover(btn, {scale=1.0, stroke=st, hoverStrokeColor="Accent", hoverStrokeTransp=0.2, baseStrokeColor="Border"})
     ApplyPress(btn, {pressScale=0.95, hoverScale=1.0})
     
@@ -902,7 +900,7 @@ function Window:_Build()
         Disposer:dispose()
     end))
     
-    -- LAUNCHER ICON (Improved)
+    -- LAUNCHER ICON
     self.LauncherIcon = Instance.new("TextButton")
     self.LauncherIcon.Name = "LauncherIcon"; self.LauncherIcon.Size = UDim2.fromOffset(54, 54)
     self.LauncherIcon.Position = UDim2.fromOffset(16, 16); self.LauncherIcon.BackgroundColor3 = Theme.BgMain
@@ -1164,7 +1162,9 @@ function Window:_BuildSettingsPanel()
     for i, name in ipairs(ThemeOrder) do
         local td = Themes[name]
         local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(1, 0, 0, 30); btn.BackgroundColor3 = Theme.SurfaceBase; btn.BackgroundTransparency = 0.4; btn.BorderSizePixel = 0; btn.Text = ""; btn.AutoButtonColor = false; btn.LayoutOrder = i; btn.ZIndex = 42; btn.Parent = listScroll
+        -- ⚡ FIX: Отступы 6px слева/справа, чтобы обводка не обрезалась
+        btn.Size = UDim2.new(1, -12, 0, 30); btn.Position = UDim2.fromOffset(6, 0)
+        btn.BackgroundColor3 = Theme.SurfaceBase; btn.BackgroundTransparency = 0.4; btn.BorderSizePixel = 0; btn.Text = ""; btn.AutoButtonColor = false; btn.LayoutOrder = i; btn.ZIndex = 42; btn.Parent = listScroll
         Corner(btn, 6); local st = Stroke(btn, "Border", 1, 0.7)
         local inner = MakeFrame(btn, { Size = UDim2.new(1, -10, 1, 0), Position = UDim2.fromOffset(10, 0), BackgroundTransparency = 1, ZIndex = 43 })
         CreateInstance("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 8), VerticalAlignment = Enum.VerticalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = inner })
@@ -1565,7 +1565,8 @@ function Tab:Toggle(opts)
         window:OnHotkey(bindId, function()
             local newState = not getToggle()
             setToggle(newState, false)
-            Notify.Push("TOGGLE", title .. (newState and " ON" or " OFF"), newState and "success" or "info", 2)
+            -- ⚡ NOTIFICATION FIX: Уведомление о смене состояния бинда
+            Notify.Push(title, "Toggled " .. (newState and "ON" or "OFF"), newState and "success" or "info", 2)
         end)
     end
     return obj
@@ -1595,7 +1596,8 @@ function Tab:Button(opts)
     local title = opts.Name or "Button"; local desc = opts.Description or ""; local cb = opts.Callback or function() end
     local style = opts.Style or "Primary"
     local card = Instance.new("TextButton")
-    card.Size = UDim2.new(1, 0, 0, 48); card.BackgroundTransparency = 0
+    -- ⚡ FIX: Отступы 8px слева/справа, чтобы тень и свечение не обрезались
+    card.Size = UDim2.new(1, -16, 0, 48); card.Position = UDim2.fromOffset(8, 0); card.BackgroundTransparency = 0
     card.BorderSizePixel = 0; card.Text = ""; card.AutoButtonColor = false; card.Parent = self.Page
     card.TextStrokeTransparency = 1
     ThemeSystem.Bind(card, {BackgroundColor3 = "Accent"}); Corner(card, 10)
@@ -1650,7 +1652,6 @@ function Tab:Button(opts)
     return obj
 end
 
--- ⚡ NEW: Создание нескольких кнопок в ряд (идеально для Save / Cancel)
 function Tab:ButtonRow(opts)
     local buttons = opts.Buttons or {}
     if #buttons == 0 then return end
@@ -1794,7 +1795,8 @@ function Tab:List(opts)
     CreateInstance("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder, Parent = scroll })
     local listObj = {}
     function listObj:AddItem(itemOpts)
-        local card = MakeFrame(scroll, { Size = UDim2.new(1, 0, 0, 54), BackgroundTheme = "SurfaceBase", BackgroundTransparency = 0.4 })
+        -- ⚡ FIX: Отступы 8px слева/справа, чтобы обводка не обрезалась
+        local card = MakeFrame(scroll, { Size = UDim2.new(1, -16, 0, 54), Position = UDim2.fromOffset(8, 0), BackgroundTheme = "SurfaceBase", BackgroundTransparency = 0.4 })
         StyleCard(card, {radius = 8}); Pad(card, 8, 12, 8, 12)
         local icon = itemOpts.Icon or "📄"; local title = itemOpts.Title or "Item"; local sub = itemOpts.Subtitle or ""
         MakeLabel(card, { Size = UDim2.fromOffset(30, 30), Position = UDim2.new(0, 0, 0.5, -15), Text = icon, TextSize = 16, TextXAlignment = Enum.TextXAlignment.Center, TextYAlignment = Enum.TextYAlignment.Center })
