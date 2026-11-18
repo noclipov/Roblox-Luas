@@ -1,21 +1,56 @@
-local Camera = workspace:FindFirstChildWhichIsA("Camera")
-local VirtualInputManager = game:GetService("VirtualInputManager")
-local Library = {}
--- loadstring(game:HttpGet("https://raw.githubusercontent.com/noclipov/Roblox-Luas/main/Libs/input.lua"))()
-Library.MouseClick = function(x, y, wtime)
-    VirtualInputManager:SendMouseButtonEvent(x, y, 0, true, nil, 0)
-    if wtime then task.wait(wtime) end
-    VirtualInputManager:SendMouseButtonEvent(x, y, 0, false, nil, 0)
+--[[ ════════════════════════════════════════════════════════════
+  Noclipov · input · v2.0
+  Эмуляция мыши/клавиатуры через VirtualInputManager.
+  API: MouseClick(x, y, hold?, button?) · MoveMouse(x, y) · PressKey(key, hold?)
+       CenterMouseClick(hold?) · ClickGui(guiObject, hold?) · Viewport()
+════════════════════════════════════════════════════════════ ]]
+
+-- [1] SERVICES
+local VIM       = game:GetService("VirtualInputManager")
+local Workspace = game:GetService("Workspace")
+
+-- [2] MODULE
+local Input = { Version = "2.0" }
+
+-- [3] HELPERS
+local function wait(t)
+	if t and t > 0 then task.wait(t) end
 end
-Library.MoveMouse = function(x, y)
-    VirtualInputManager:SendMouseMoveEvent(x, y, nil)
+
+-- [4] PUBLIC API
+function Input.Viewport(): Vector2
+	local cam = Workspace.CurrentCamera -- камера может смениться, не кэшируем
+	return cam and cam.ViewportSize or Vector2.zero
 end
-Library.PressKey = function(keycode, wtime)
-    VirtualInputManager:SendKeyEvent(true, keycode, false, nil)
-    if wtime then task.wait(wtime) end
-    VirtualInputManager:SendKeyEvent(false, keycode, false, nil)
+
+-- button: 0 = ЛКМ, 1 = ПКМ, 2 = СКМ
+function Input.MouseClick(x: number, y: number, hold: number?, button: number?)
+	button = button or 0
+	VIM:SendMouseButtonEvent(x, y, button, true, nil, 0)
+	wait(hold)
+	VIM:SendMouseButtonEvent(x, y, button, false, nil, 0)
 end
-Library.CenterMouseClick = function()
-    Library.MouseClick(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+
+function Input.MoveMouse(x: number, y: number)
+	VIM:SendMouseMoveEvent(x, y, nil)
 end
-return Library
+
+function Input.PressKey(key: Enum.KeyCode, hold: number?)
+	VIM:SendKeyEvent(true, key, false, nil)
+	wait(hold)
+	VIM:SendKeyEvent(false, key, false, nil)
+end
+
+function Input.CenterMouseClick(hold: number?)
+	local v = Input.Viewport()
+	Input.MouseClick(v.X / 2, v.Y / 2, hold)
+end
+
+-- Клик по центру GuiObject (учитывает GuiInset)
+function Input.ClickGui(gui: GuiObject, hold: number?)
+	local inset = game:GetService("GuiService"):GetGuiInset()
+	local c = gui.AbsolutePosition + gui.AbsoluteSize / 2 + inset
+	Input.MouseClick(c.X, c.Y, hold)
+end
+
+return Input

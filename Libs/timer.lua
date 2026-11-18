@@ -1,158 +1,152 @@
+--[[ ════════════════════════════════════════════════════════════
+  Noclipov · timer · v2.0
+  Секундомер / часы на экране.
+  API: Timer.new(mode?) → :Start() :Stop() :Reset() :Lap() :SetMode(m) :GetTime()
+       :IsRunning() :Destroy()        mode = "Timer" | "Clock"
+════════════════════════════════════════════════════════════ ]]
+
+-- [1] SERVICES
 local RunService = game:GetService("RunService")
-local CoreGui = game:GetService("CoreGui")   -- используем CoreGui
+local CoreGui    = game:GetService("CoreGui")
 
-local TimerModule = {}
-TimerModule.__index = TimerModule
-
--- [[ НАСТРОЙКИ ]]
-local UI_NAME = "Noclipov_UniversalTimer_System"
-local COLORS = {
-    Background = Color3.fromRGB(25, 25, 30),
-    Accent = Color3.fromRGB(140, 100, 255),
-    Text = Color3.fromRGB(240, 240, 240),
-    Shadow = Color3.fromRGB(0, 0, 0),
-}
+-- [2] CONFIG
+local UI_NAME   = "Noclipov_UniversalTimer_System"
 local SHADOW_ID = "rbxassetid://1316045217"
+local COLORS = {
+	Background = Color3.fromRGB(25, 25, 30),
+	Accent     = Color3.fromRGB(140, 100, 255),
+	Text       = Color3.fromRGB(240, 240, 240),
+	Shadow     = Color3.fromRGB(0, 0, 0),
+}
 
-function TimerModule.new(mode)
-    local self = setmetatable({}, TimerModule)
-    
-    self.Mode = mode or "Timer" -- "Timer" или "Clock"
-    self.startTime = 0
-    self.elapsedTime = 0
-    self.isRunning = false
-    
-    self:_buildInterface()
-    
-    self.connection = RunService.RenderStepped:Connect(function()
-        self:_update()
-    end)
-    
-    return self
+-- [3] HELPERS
+local function guiParent(): Instance
+	local ok, hui = pcall(function() return gethui and gethui() end)
+	return (ok and hui) or CoreGui
 end
 
-function TimerModule:_buildInterface()
-    -- Работаем с CoreGui
-    local coreGui = CoreGui
-    
-    -- Удаляем старый GUI, если есть
-    local old = coreGui:FindFirstChild(UI_NAME)
-    if old then old:Destroy() end
-
-    local sg = Instance.new("ScreenGui")
-    sg.Name = UI_NAME
-    sg.ResetOnSpawn = false
-    sg.IgnoreGuiInset = true
-    sg.Parent = coreGui
-    self.Gui = sg
-
-    -- ТЕНЬ
-    local shadow = Instance.new("ImageLabel")
-    shadow.Name = "Shadow"
-    shadow.AnchorPoint = Vector2.new(0.5, 1)
-    shadow.Position = UDim2.new(0.5, 0, 0.5, 90)
-    shadow.Size = UDim2.new(0, 160, 0, 45)
-    shadow.BackgroundTransparency = 1
-    shadow.Image = SHADOW_ID
-    shadow.ImageColor3 = COLORS.Shadow
-    shadow.ImageTransparency = 0.5
-    shadow.ScaleType = Enum.ScaleType.Slice
-    shadow.SliceCenter = Rect.new(10, 10, 118, 118)
-    shadow.Parent = sg
-
-    -- ГЛАВНЫЙ ФРЕЙМ (Прозрачный фон)
-    local main = Instance.new("Frame")
-    main.Name = "Main"
-    main.Size = UDim2.new(1, -10, 1, -10)
-    main.Position = UDim2.new(0, 5, 0, 5)
-    main.BackgroundColor3 = COLORS.Background
-    main.BackgroundTransparency = 0.5
-    main.BorderSizePixel = 0
-    main.Parent = shadow
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 6)
-    corner.Parent = main
-    
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = COLORS.Accent
-    stroke.Thickness = 1
-    stroke.Transparency = 0.7
-    stroke.Parent = main
-
-    -- ВНУТРЕННЯЯ ПОЛОСКА
-    local accent = Instance.new("Frame")
-    accent.Name = "InnerAccent"
-    accent.Size = UDim2.new(1, -40, 0, 2)
-    accent.Position = UDim2.new(0.5, 0, 1, -6)
-    accent.AnchorPoint = Vector2.new(0.5, 0)
-    accent.BackgroundColor3 = COLORS.Accent
-    accent.BorderSizePixel = 0
-    accent.ZIndex = 7
-    accent.Parent = main
-
-    local accentCorner = Instance.new("UICorner")
-    accentCorner.CornerRadius = UDim.new(1, 0)
-    accentCorner.Parent = accent
-
-    -- ТЕКСТ
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, 0, 1, -8)
-    label.BackgroundTransparency = 1
-    label.TextColor3 = COLORS.Text
-    label.Font = Enum.Font.GothamBold
-    label.TextSize = 18
-    label.RichText = true
-    label.Text = "00:00:00"
-    label.ZIndex = 8
-    label.Parent = main
-    
-    self.Label = label
+local function make(class: string, props: { [string]: any }, parent: Instance?): Instance
+	local o = Instance.new(class)
+	for k, v in pairs(props) do o[k] = v end
+	o.Parent = parent
+	return o
 end
 
--- [[ МЕТОДЫ ]]
-
-function TimerModule:SetMode(mode)
-    self.Mode = mode
+local function formatTimer(total: number): string
+	local h = math.floor(total / 3600)
+	local m = math.floor(total / 60) % 60
+	local s = math.floor(total) % 60
+	local cs = math.floor((total % 1) * 100)
+	local head = h > 0 and string.format("%d:%02d:%02d", h, m, s) or string.format("%02d:%02d", m, s)
+	return string.format("%s.<font size='12'>%02d</font>", head, cs)
 end
 
-function TimerModule:Start()
-    if self.Mode == "Timer" and not self.isRunning then
-        self.startTime = os.clock() - self.elapsedTime
-        self.isRunning = true
-    end
+-- [4] CLASS
+local Timer = { Version = "2.0" }
+Timer.__index = Timer
+
+function Timer.new(mode: string?)
+	local self = setmetatable({
+		Mode = mode or "Timer",
+		Running = false,
+		Laps = {},
+		_elapsed = 0,
+		_startedAt = 0,
+		_text = "",
+	}, Timer)
+
+	self:_build()
+	self._conn = RunService.RenderStepped:Connect(function() self:_update() end)
+	return self
 end
 
-function TimerModule:Stop()
-    if self.isRunning then
-        self.elapsedTime = os.clock() - self.startTime
-        self.isRunning = false
-    end
+function Timer:_build()
+	local old = CoreGui:FindFirstChild(UI_NAME)
+	if old then old:Destroy() end
+
+	local sg = make("ScreenGui", { Name = UI_NAME, ResetOnSpawn = false, IgnoreGuiInset = true })
+	local shadow = make("ImageLabel", {
+		Name = "Shadow", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 0.5, 90),
+		Size = UDim2.fromOffset(160, 45), BackgroundTransparency = 1, Image = SHADOW_ID,
+		ImageColor3 = COLORS.Shadow, ImageTransparency = 0.5, ScaleType = Enum.ScaleType.Slice,
+		SliceCenter = Rect.new(10, 10, 118, 118),
+	}, sg)
+	local main = make("Frame", {
+		Name = "Main", Size = UDim2.new(1, -10, 1, -10), Position = UDim2.fromOffset(5, 5),
+		BackgroundColor3 = COLORS.Background, BackgroundTransparency = 0.5, BorderSizePixel = 0,
+	}, shadow)
+	make("UICorner", { CornerRadius = UDim.new(0, 6) }, main)
+	make("UIStroke", { Color = COLORS.Accent, Thickness = 1, Transparency = 0.7 }, main)
+
+	local bar = make("Frame", {
+		Name = "InnerAccent", Size = UDim2.new(1, -40, 0, 2), Position = UDim2.new(0.5, 0, 1, -6),
+		AnchorPoint = Vector2.new(0.5, 0), BackgroundColor3 = COLORS.Accent, BorderSizePixel = 0, ZIndex = 7,
+	}, main)
+	make("UICorner", { CornerRadius = UDim.new(1, 0) }, bar)
+
+	self.Label = make("TextLabel", {
+		Size = UDim2.new(1, 0, 1, -8), BackgroundTransparency = 1, TextColor3 = COLORS.Text,
+		Font = Enum.Font.GothamBold, TextSize = 18, RichText = true, Text = "00:00.00", ZIndex = 8,
+	}, main)
+
+	sg.Parent = guiParent() -- Parent последним: один reflow вместо десятка
+	self.Gui = sg
 end
 
-function TimerModule:Reset()
-    self.elapsedTime = 0
-    self.startTime = self.isRunning and os.clock() or 0
+function Timer:_update()
+	local text
+	if self.Mode == "Clock" then
+		text = os.date("%H:%M:%S")
+	else
+		text = formatTimer(self:GetTime())
+	end
+	if text ~= self._text then -- не трогаем Text, если строка не изменилась
+		self._text = text
+		self.Label.Text = text
+	end
 end
 
-function TimerModule:Destroy()
-    if self.connection then self.connection:Disconnect() end
-    if self.Gui then self.Gui:Destroy() end
+-- [5] PUBLIC API
+function Timer:GetTime(): number
+	return self.Running and (os.clock() - self._startedAt) or self._elapsed
 end
 
-function TimerModule:_update()
-    if not self.Label then return end
-    
-    if self.Mode == "Clock" then
-        local timeString = os.date("%H:%M:%S")
-        self.Label.Text = timeString
-    else
-        local total = self.isRunning and (os.clock() - self.startTime) or self.elapsedTime
-        local mins = math.floor(total / 60)
-        local secs = math.floor(total % 60)
-        local ms = math.floor((total % 1) * 100)
-        self.Label.Text = string.format("%02d:%02d.<font size='12'>%02d</font>", mins, secs, ms)
-    end
+function Timer:IsRunning(): boolean
+	return self.Running
 end
 
-return TimerModule
+function Timer:SetMode(mode: string)
+	self.Mode = mode
+	self._text = ""
+end
+
+function Timer:Start()
+	if self.Mode ~= "Timer" or self.Running then return end
+	self._startedAt = os.clock() - self._elapsed
+	self.Running = true
+end
+
+function Timer:Stop()
+	if not self.Running then return end
+	self._elapsed = os.clock() - self._startedAt
+	self.Running = false
+end
+
+function Timer:Reset()
+	self._elapsed = 0
+	self._startedAt = self.Running and os.clock() or 0
+	table.clear(self.Laps)
+end
+
+function Timer:Lap(): number
+	local t = self:GetTime()
+	self.Laps[#self.Laps + 1] = t
+	return t
+end
+
+function Timer:Destroy()
+	if self._conn then self._conn:Disconnect() self._conn = nil end
+	if self.Gui then self.Gui:Destroy() self.Gui = nil end
+end
+
+return Timer

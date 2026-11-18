@@ -1,5 +1,5 @@
 --============================================================
--- NoclipovUI v5.2.0 — Premium Edition (Patched)
+-- NoclipovUI v5.2.1 — Premium Edition (Patched · unified-template pass)
 --============================================================
 local UserInputService = game:GetService("UserInputService")
 local TweenService     = game:GetService("TweenService")
@@ -10,7 +10,7 @@ local Players          = game:GetService("Players")
 local ContentProvider  = game:GetService("ContentProvider")
 local TextService      = game:GetService("TextService")
 
-local SCRIPT_VERSION = "5.2.0"
+local SCRIPT_VERSION = "5.2.1"
 local UI_NAME        = "NoclipovUI"
 local LocalPlayer    = Players.LocalPlayer
 
@@ -23,7 +23,7 @@ local function CleanupOldUIs()
     local function destroyIn(parent)
         if not parent then return end
         for _, child in ipairs(parent:GetChildren()) do
-            if child:IsA("ScreenGui") and (child.Name:match("^" .. UI_NAME) or child.Name == "Noclipov_UI_Storage") then
+            if child:IsA("ScreenGui") and child.Name:match("^" .. UI_NAME) then -- контейнер notify.lua ("Noclipov_UI_Storage") не трогаем
                 pcall(function() child:Destroy() end)
             end
         end
@@ -863,7 +863,7 @@ local CONST = { HEADER_H = 56, TAB_H = 46, PAD = 14, MIN_W = 480, MIN_H = 380, P
 
 function Window.new(opts)
     CleanupOldUIs()
-    PreloadAssets()
+    task.spawn(PreloadAssets) -- PreloadAsync yield'ит: не блокируем создание окна
     opts = opts or {}; local self = setmetatable({}, Window)
     self.Title = opts.Title or "Window"; self.Version = opts.Version or SCRIPT_VERSION
     self.Width = opts.Size and opts.Size.X.Offset or 720
